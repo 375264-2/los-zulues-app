@@ -18,6 +18,7 @@
     --danger: #e2665a;
   }
   *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
   html,body{margin:0;padding:0;}
   body{
     background:var(--bg);
@@ -58,9 +59,9 @@
     color:var(--text-dim);
   }
   header .meta span.num{ color:var(--text); }
+  .fila-accesos{ display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
   .link-comidas{
     display:inline-block;
-    margin-top:10px;
     font-size:12.5px;
     color:var(--accent);
     text-decoration:none;
@@ -200,7 +201,10 @@
   <div class="marca">LOS ZULUES TRIBU FITNESS</div>
   <h1 id="nombre-alumno">Cargando…</h1>
   <div class="meta" id="meta-rutina"></div>
-  <a class="link-comidas" id="link-comidas" href="#">🍽️ Registrar mi alimentación</a>
+  <div class="fila-accesos">
+    <a class="link-comidas" id="link-comidas" href="#">🍽️ Registrar mi alimentación</a>
+    <a class="link-comidas" id="link-evolucion" href="#seccion-evolucion" style="display:none;">📈 Ver mi evolución</a>
+  </div>
 </header>
 
 <main>
@@ -412,6 +416,7 @@
 
     datosMedicionesAlumno = data;
     document.getElementById("seccion-evolucion").style.display = "block";
+    document.getElementById("link-evolucion").style.display = "inline-block";
     dibujarGraficoEvolucion();
   }
 
