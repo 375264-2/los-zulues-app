@@ -357,6 +357,34 @@
   const CLAVE_COACH = "Area51";
   const BASE_URL = window.location.origin + window.location.pathname.replace("coach.html", "alumno.html");
 
+  async function guardarNombreAlumno(alumnoId){
+    const nuevoNombre = document.getElementById("edit-nombre-alumno-" + alumnoId).value.trim();
+    if(!nuevoNombre){
+      alert("El nombre no puede quedar vacío.");
+      return;
+    }
+    const { error } = await sb.from("alumnos").update({ nombre: nuevoNombre }).eq("id", alumnoId);
+    if(error){
+      alert("Error guardando el nombre: " + error.message);
+      return;
+    }
+    await cargarListaAlumnos();
+  }
+
+  async function borrarAlumno(alumnoId, nombreActual){
+    const confirmacion = prompt(`Esto borra a ${nombreActual} y TODA su información (rutinas, mediciones, comidas) para siempre.\n\nPara confirmar, escribí su nombre exacto:`);
+    if(confirmacion !== nombreActual){
+      if(confirmacion !== null) alert("El nombre no coincide, no se borró nada.");
+      return;
+    }
+    const { error } = await sb.from("alumnos").delete().eq("id", alumnoId);
+    if(error){
+      alert("Error borrando al alumno: " + error.message);
+      return;
+    }
+    await cargarListaAlumnos();
+  }
+
   function mostrarDiaEjercicios(alumnoId, diaElegido){
     document.querySelectorAll(`[id^="dia-contenido-${alumnoId}-"]`).forEach(div => {
       div.style.display = "none";
@@ -518,7 +546,13 @@
           </div>
 
           <div class="panel-edicion" id="edicion-${a.id}">
-            <label>Nombre de la rutina</label>
+            <label>Nombre del alumno</label>
+            <div style="display:flex; gap:6px;">
+              <input type="text" id="edit-nombre-alumno-${a.id}" value="${a.nombre}" style="flex:1;">
+              <button style="flex:0 0 auto; background:none; border:1px solid var(--accent); color:var(--accent); border-radius:8px; padding:0 14px; font-size:13px; cursor:pointer;" onclick="guardarNombreAlumno('${a.id}')">Guardar nombre</button>
+            </div>
+
+            <label style="margin-top:18px;">Nombre de la rutina</label>
             <input type="text" id="edit-nombre-${a.id}" value="${nombreRutinaSugerido}">
             <div class="fila-2">
               <div>
@@ -546,6 +580,10 @@
               <option value="4" ${semanaActual===4?"selected":""}>Semana 4 — Descarga (RIR 4, menos series)</option>
             </select>
             <button class="btn-principal" onclick="regenerarRutina('${a.id}')">Generar esta rutina (reemplaza la actual)</button>
+
+            <div style="margin-top:24px; padding-top:16px; border-top:1px dashed var(--line);">
+              <button style="width:100%; background:none; border:1px solid var(--danger); color:var(--danger); border-radius:10px; padding:12px; font-size:14px; cursor:pointer;" onclick="borrarAlumno('${a.id}', '${a.nombre.replace(/'/g,"\\'")}')">Borrar alumno (elimina todo: rutinas, mediciones y comidas)</button>
+            </div>
           </div>
 
           <div class="panel-edicion" id="medicion-${a.id}">
