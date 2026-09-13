@@ -1,0 +1,1048 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Panel del Coach — LOS ZULUES TRIBU FITNESS</title>
+<style>
+  :root{
+    --bg: #0d0f0d;
+    --bg-card: #161916;
+    --line: #262a26;
+    --text: #eef0ea;
+    --text-dim: #8d948a;
+    --accent: #c9e265;
+    --danger: #e2665a;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    min-height:100vh;
+    padding-bottom:60px;
+  }
+  .num{ font-family:"SF Mono","Menlo","Consolas",monospace; }
+
+  header{
+    padding:22px 20px 16px;
+    border-bottom:1px solid var(--line);
+  }
+  header .marca{
+    font-size:11px;
+    letter-spacing:.14em;
+    color:var(--text-dim);
+    margin-bottom:6px;
+  }
+  header h1{ margin:0; font-size:22px; font-weight:650; }
+
+  main{ max-width:640px; margin:0 auto; padding:0 16px; }
+
+  /* --- Pantalla de acceso --- */
+  #pantalla-login{
+    max-width:340px; margin:80px auto; padding:0 24px;
+    text-align:center;
+  }
+  #pantalla-login p{ color:var(--text-dim); font-size:14px; margin-bottom:20px; }
+  #pantalla-login input{
+    width:100%;
+    background:var(--bg-card);
+    border:1px solid var(--line);
+    color:var(--text);
+    padding:14px 16px;
+    border-radius:10px;
+    font-size:16px;
+    margin-bottom:12px;
+  }
+  #pantalla-login button, .btn-principal{
+    width:100%;
+    background:var(--accent);
+    color:#0d0f0d;
+    border:none;
+    padding:14px 16px;
+    border-radius:10px;
+    font-size:15px;
+    font-weight:700;
+    cursor:pointer;
+  }
+  #error-login{ color:var(--danger); font-size:13px; margin-top:10px; display:none; }
+
+  /* --- Panel --- */
+  section{
+    background:var(--bg-card);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:20px;
+    margin-top:20px;
+  }
+  section h2{
+    margin:0 0 16px;
+    font-size:15px;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    color:var(--text-dim);
+  }
+  label{
+    display:block;
+    font-size:13px;
+    color:var(--text-dim);
+    margin-bottom:6px;
+    margin-top:14px;
+  }
+  label:first-of-type{ margin-top:0; }
+  input[type=text], input[type=date], select{
+    color-scheme: dark;
+    width:100%;
+    background:#0d0f0d;
+    border:1px solid var(--line);
+    color:var(--text);
+    padding:11px 12px;
+    border-radius:8px;
+    font-size:15px;
+  }
+  .fila-2{ display:flex; gap:10px; }
+  .fila-2 > div{ flex:1; }
+
+  #resultado-alta{
+    display:none;
+    margin-top:16px;
+    padding:14px;
+    border-radius:10px;
+    background:rgba(201,226,101,.1);
+    border:1px solid var(--accent);
+  }
+  #resultado-alta .link-generado{
+    display:block;
+    word-break:break-all;
+    font-size:13px;
+    color:var(--accent);
+    margin:8px 0;
+    font-family:"SF Mono","Menlo","Consolas",monospace;
+  }
+  .btn-copiar{
+    background:none;
+    border:1px solid var(--accent);
+    color:var(--accent);
+    padding:8px 14px;
+    border-radius:8px;
+    font-size:13px;
+    cursor:pointer;
+  }
+
+  .alumno-fila{
+    display:block;
+    padding:12px 0;
+    border-bottom:1px solid var(--line);
+  }
+  .alumno-fila:last-child{ border-bottom:none; }
+  .alumno-fila-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px;
+  }
+  .alumno-nombre{ font-weight:600; font-size:15px; }
+  .alumno-detalle{ font-size:12.5px; color:var(--text-dim); margin-top:2px; }
+  .alumno-fila-top .botones{ display:flex; gap:6px; flex:0 0 auto; }
+  .alumno-fila button{
+    background:none;
+    border:1px solid var(--line);
+    color:var(--text);
+    padding:8px 12px;
+    border-radius:8px;
+    font-size:12.5px;
+    cursor:pointer;
+  }
+  .panel-edicion{
+    display:none;
+    margin-top:14px;
+    padding:14px;
+    background:#0d0f0d;
+    border:1px solid var(--line);
+    border-radius:10px;
+  }
+  .panel-edicion label{ margin-top:10px; }
+  .panel-edicion label:first-child{ margin-top:0; }
+  .panel-edicion .btn-principal{ margin-top:14px; }
+
+  .grid-medidas{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px 12px;
+  }
+  .grid-medidas label{ margin-top:0; }
+  .tabla-historial{
+    width:100%;
+    border-collapse:collapse;
+    margin-top:14px;
+    font-size:12.5px;
+  }
+  .tabla-historial th, .tabla-historial td{
+    text-align:left;
+    padding:6px 8px;
+    border-bottom:1px solid var(--line);
+    white-space:nowrap;
+  }
+  .tabla-historial th{ color:var(--text-dim); font-weight:600; }
+  .tabla-historial td{ font-family:"SF Mono","Menlo","Consolas",monospace; }
+  .sin-historial{ color:var(--text-dim); font-size:13px; margin-top:12px; }
+
+  .dia-editor{ margin-top:16px; }
+  .dia-editor:first-child{ margin-top:0; }
+  .dia-editor h3{
+    font-size:13px; color:var(--accent); margin:0 0 8px; font-weight:700;
+  }
+  .bloque-editor-titulo{
+    font-size:11px; text-transform:uppercase; letter-spacing:.06em;
+    color:var(--text-dim); margin:10px 0 6px;
+  }
+  .fila-ejercicio-editor{
+    background:#0d0f0d; border:1px solid var(--line); border-radius:10px;
+    padding:10px; margin-bottom:8px;
+  }
+  .fila-ejercicio-editor select{ margin-bottom:6px; }
+  .grid-campos-ej{
+    display:grid; grid-template-columns:repeat(2,1fr); gap:6px; margin:6px 0;
+  }
+  @media (min-width:480px){
+    .grid-campos-ej{ grid-template-columns:repeat(4,1fr); }
+  }
+  .grid-campos-ej div label{ font-size:10.5px; margin:0 0 2px; }
+  .grid-campos-ej input{ padding:7px 8px; font-size:13px; }
+  .fila-ejercicio-editor .notas-ej{ margin-top:6px; }
+  .campo-peso-base{
+    margin-top:6px; padding-top:8px; border-top:1px dashed var(--line);
+    display:flex; align-items:center; gap:8px;
+  }
+  .campo-peso-base label{ font-size:11.5px; color:var(--accent); margin:0; flex:1; }
+  .campo-peso-base input{ width:70px; padding:7px 8px; font-size:13px; text-align:center; }
+  .campo-peso-base .unidad{ font-size:11px; color:var(--text-dim); }
+  .acciones-fila-ej{ display:flex; gap:6px; margin-top:8px; }
+  .acciones-fila-ej button{
+    flex:1; padding:7px; border-radius:7px; font-size:12px; cursor:pointer;
+  }
+  .btn-guardar-fila{ background:var(--accent); border:none; color:var(--bg); font-weight:700; }
+  .btn-borrar-fila{ background:none; border:1px solid var(--danger); color:var(--danger); }
+
+  .agregar-ejercicio{
+    display:flex; gap:6px; margin-top:6px; margin-bottom:4px;
+  }
+  .agregar-ejercicio select{ flex:1; }
+  .agregar-ejercicio button{
+    background:none; border:1px solid var(--accent); color:var(--accent);
+    border-radius:8px; padding:0 14px; font-size:13px; cursor:pointer; white-space:nowrap;
+  }
+
+  .fila-peso{
+    display:flex; align-items:center; gap:8px;
+    background:#0d0f0d; border:1px solid var(--line); border-radius:9px;
+    padding:9px 10px; margin-bottom:6px;
+  }
+  .fila-peso .nombre-peso{ flex:1; font-size:13.5px; }
+  .fila-peso input{ width:80px; padding:7px 8px; font-size:13px; text-align:center; }
+  .fila-peso .unidad{ font-size:12px; color:var(--text-dim); }
+  .fila-peso button{
+    background:none; border:1px solid var(--line); border-radius:7px;
+    padding:6px 9px; font-size:12px; cursor:pointer;
+  }
+  .fila-peso .btn-guardar-peso{ border-color:var(--accent); color:var(--accent); }
+  .fila-peso .btn-borrar-peso{ border-color:var(--danger); color:var(--danger); }
+  .cargando-lista{ color:var(--text-dim); font-size:14px; }
+</style>
+</head>
+<body>
+
+<div id="pantalla-login">
+  <div class="marca">LOS ZULUES TRIBU FITNESS</div>
+  <h1 style="margin-bottom:16px;">Panel del coach</h1>
+  <p>Ingresá la contraseña para continuar.</p>
+  <input type="password" id="input-clave" placeholder="Contraseña" autofocus>
+  <button onclick="intentarEntrar()">Entrar</button>
+  <div id="error-login">Contraseña incorrecta.</div>
+</div>
+
+<div id="panel" style="display:none;">
+  <header>
+    <div class="marca">LOS ZULUES TRIBU FITNESS</div>
+    <h1>Panel del coach</h1>
+  </header>
+
+  <main>
+    <section>
+      <h2>Cargar alumno nuevo</h2>
+
+      <label>Nombre</label>
+      <input type="text" id="f-nombre" placeholder="Ej: Martina Gómez">
+
+      <div class="fila-2">
+        <div>
+          <label>Sexo</label>
+          <select id="f-sexo">
+            <option value="femenino">Femenino</option>
+            <option value="masculino">Masculino</option>
+          </select>
+        </div>
+        <div>
+          <label>Perfil biológico</label>
+          <select id="f-perfil">
+            <option value="A">A — Ciclo activo</option>
+            <option value="B">B — Perimenopausia/menopausia</option>
+            <option value="Lineal">Lineal — Masculino</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="fila-2">
+        <div>
+          <label>Días por semana</label>
+          <select id="f-dias">
+            <option value="3">3 días (Full Body)</option>
+            <option value="4" selected>4 días (Superior/Inferior)</option>
+            <option value="5">5 días</option>
+          </select>
+        </div>
+        <div>
+          <label>Nombre de la rutina</label>
+          <input type="text" id="f-nombre-rutina" value="Rutina - Semana 1">
+        </div>
+      </div>
+
+      <button class="btn-principal" style="margin-top:18px;" onclick="crearAlumno()">Crear alumno y generar rutina</button>
+
+      <div id="resultado-alta">
+        <strong id="resultado-nombre"></strong> ya tiene su rutina lista.
+        <span class="link-generado" id="resultado-link"></span>
+        <button class="btn-copiar" onclick="copiarLink()">Copiar link</button>
+      </div>
+    </section>
+
+    <section>
+      <h2>Alumnos activos</h2>
+      <div id="lista-alumnos" class="cargando-lista">Cargando…</div>
+    </section>
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<script>
+  function formatFechaAR(fechaISO){
+    if(!fechaISO) return "-";
+    const [anio, mes, dia] = fechaISO.split("-");
+    return `${dia}/${mes}/${anio}`;
+  }
+  const SUPABASE_URL = "https://yrwbhzfbcomwojplrfrb.supabase.co";
+  const SUPABASE_KEY = "sb_publishable_2O5mIe_yCnMRdF1ppZIQrg_3aWF1MED";
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  const CLAVE_COACH = "Area51";
+  const BASE_URL = window.location.origin + window.location.pathname.replace("coach.html", "alumno.html");
+
+  function intentarEntrar(){
+    const valor = document.getElementById("input-clave").value;
+    if(valor === CLAVE_COACH){
+      document.getElementById("pantalla-login").style.display = "none";
+      document.getElementById("panel").style.display = "block";
+      cargarListaAlumnos();
+    } else {
+      document.getElementById("error-login").style.display = "block";
+    }
+  }
+  document.getElementById("input-clave").addEventListener("keydown", e => {
+    if(e.key === "Enter") intentarEntrar();
+  });
+
+  async function crearAlumno(){
+    const nombre = document.getElementById("f-nombre").value.trim();
+    const sexo = document.getElementById("f-sexo").value;
+    const perfil = document.getElementById("f-perfil").value;
+    const dias = parseInt(document.getElementById("f-dias").value, 10);
+    const nombreRutina = document.getElementById("f-nombre-rutina").value.trim() || "Rutina - Semana 1";
+
+    if(!nombre){
+      alert("Falta el nombre del alumno.");
+      return;
+    }
+
+    const boton = event.target;
+    boton.disabled = true;
+    boton.textContent = "Creando...";
+
+    const { data, error } = await sb.rpc("coach_crear_alumno_y_rutina", {
+      p_nombre: nombre,
+      p_sexo: sexo,
+      p_nombre_rutina: nombreRutina,
+      p_semana_mesociclo: 1,
+      p_perfil_biologico: perfil,
+      p_dias: dias
+    });
+
+    boton.disabled = false;
+    boton.textContent = "Crear alumno y generar rutina";
+
+    if(error || !data || !data[0]){
+      alert("Hubo un error creando al alumno: " + (error ? error.message : "sin datos"));
+      return;
+    }
+
+    const alumnoId = data[0].alumno_id;
+    const link = BASE_URL + "?id=" + alumnoId;
+
+    document.getElementById("resultado-nombre").textContent = nombre;
+    document.getElementById("resultado-link").textContent = link;
+    document.getElementById("resultado-alta").style.display = "block";
+    document.getElementById("resultado-alta").dataset.link = link;
+
+    document.getElementById("f-nombre").value = "";
+
+    cargarListaAlumnos();
+  }
+
+  function copiarLink(){
+    const link = document.getElementById("resultado-alta").dataset.link;
+    navigator.clipboard.writeText(link).then(() => {
+      alert("Link copiado.");
+    });
+  }
+
+  async function cargarListaAlumnos(){
+    const cont = document.getElementById("lista-alumnos");
+    cont.textContent = "Cargando…";
+    cont.className = "cargando-lista";
+
+    const { data: alumnos, error } = await sb
+      .from("alumnos")
+      .select("id, nombre, sexo, peso, altura, edad, objetivo, nivel_actividad")
+      .order("nombre", { ascending:true });
+
+    if(error || !alumnos){
+      cont.textContent = "No se pudo cargar la lista.";
+      return;
+    }
+
+    if(alumnos.length === 0){
+      cont.textContent = "Todavía no hay alumnos cargados.";
+      return;
+    }
+
+    const { data: rutinas } = await sb
+      .from("rutinas")
+      .select("id, alumno_id, nombre_rutina, perfil_biologico, semana_mesociclo, activa")
+      .eq("activa", true);
+
+    const rutinaPorAlumno = {};
+    (rutinas || []).forEach(r => { rutinaPorAlumno[r.alumno_id] = r; });
+    rutinaPorAlumnoGlobal = rutinaPorAlumno;
+
+    cont.className = "";
+    cont.innerHTML = "";
+
+    alumnos.forEach(a => {
+      const rutina = rutinaPorAlumno[a.id];
+      const link = BASE_URL + "?id=" + a.id;
+      const detalle = rutina
+        ? `${rutina.nombre_rutina} · Perfil ${rutina.perfil_biologico} · Semana ${rutina.semana_mesociclo}`
+        : "Sin rutina activa";
+      const perfilActual = rutina ? rutina.perfil_biologico : "Lineal";
+      const semanaActual = rutina ? rutina.semana_mesociclo : 1;
+      const nombreRutinaSugerido = rutina ? rutina.nombre_rutina : "Rutina - Semana 1";
+
+      cont.insertAdjacentHTML("beforeend", `
+        <div class="alumno-fila">
+          <div class="alumno-fila-top">
+            <div>
+              <div class="alumno-nombre">${a.nombre}</div>
+              <div class="alumno-detalle">${detalle}</div>
+            </div>
+            <div class="botones">
+              <button onclick="navigator.clipboard.writeText('${link}'); this.textContent='Copiado';">Copiar link</button>
+              <button onclick="togglePanelEdicion('${a.id}')">Editar</button>
+              <button onclick="togglePanelMediciones('${a.id}')">Mediciones</button>
+              <button onclick="togglePanelNutricion('${a.id}')">Datos nutricionales</button>
+              <button onclick="togglePanelEjercicios('${a.id}')">Ejercicios</button>
+            </div>
+          </div>
+
+          <div class="panel-edicion" id="edicion-${a.id}">
+            <label>Nombre de la rutina</label>
+            <input type="text" id="edit-nombre-${a.id}" value="${nombreRutinaSugerido}">
+            <div class="fila-2">
+              <div>
+                <label>Perfil biológico</label>
+                <select id="edit-perfil-${a.id}">
+                  <option value="A" ${perfilActual==="A"?"selected":""}>A — Ciclo activo</option>
+                  <option value="B" ${perfilActual==="B"?"selected":""}>B — Perimenopausia/menopausia</option>
+                  <option value="Lineal" ${perfilActual==="Lineal"?"selected":""}>Lineal — Masculino</option>
+                </select>
+              </div>
+              <div>
+                <label>Días por semana</label>
+                <select id="edit-dias-${a.id}">
+                  <option value="3">3 días (Full Body)</option>
+                  <option value="4">4 días (Superior/Inferior)</option>
+                  <option value="5">5 días</option>
+                </select>
+              </div>
+            </div>
+            <label>Semana del mesociclo (define el RIR y el volumen automáticamente)</label>
+            <select id="edit-semana-${a.id}">
+              <option value="1" ${semanaActual===1?"selected":""}>Semana 1 — RIR 4</option>
+              <option value="2" ${semanaActual===2?"selected":""}>Semana 2 — RIR 3</option>
+              <option value="3" ${semanaActual===3?"selected":""}>Semana 3 — RIR 2 (más exigente)</option>
+              <option value="4" ${semanaActual===4?"selected":""}>Semana 4 — Descarga (RIR 4, menos series)</option>
+            </select>
+            <button class="btn-principal" onclick="regenerarRutina('${a.id}')">Generar esta rutina (reemplaza la actual)</button>
+          </div>
+
+          <div class="panel-edicion" id="medicion-${a.id}">
+            <label>Fecha</label>
+            <input type="date" id="med-fecha-${a.id}" value="${hoyISO()}">
+            <div class="grid-medidas" style="margin-top:10px;">
+              <div><label>Cuello (cm)</label><input type="text" id="med-cuello-${a.id}"></div>
+              <div><label>Torso (cm)</label><input type="text" id="med-torso-${a.id}"></div>
+              <div><label>Brazo izq. (cm)</label><input type="text" id="med-brazo-izq-${a.id}"></div>
+              <div><label>Brazo der. (cm)</label><input type="text" id="med-brazo-der-${a.id}"></div>
+              <div><label>Cintura (cm)</label><input type="text" id="med-cintura-${a.id}"></div>
+              <div><label>Cadera (cm)</label><input type="text" id="med-cadera-${a.id}"></div>
+              <div><label>Cuádriceps izq. (cm)</label><input type="text" id="med-cuad-izq-${a.id}"></div>
+              <div><label>Cuádriceps der. (cm)</label><input type="text" id="med-cuad-der-${a.id}"></div>
+              <div><label>Pantorrillas (cm)</label><input type="text" id="med-pantorrillas-${a.id}"></div>
+              <div><label>% Masa muscular</label><input type="text" id="med-masa-${a.id}"></div>
+              <div style="grid-column:span 2;"><label>% Grasa corporal</label><input type="text" id="med-grasa-${a.id}"></div>
+            </div>
+            <label>Notas (opcional)</label>
+            <input type="text" id="med-notas-${a.id}">
+            <button class="btn-principal" onclick="guardarMedicion('${a.id}')">Guardar medición</button>
+
+            <label style="margin-top:20px;">Ver evolución de</label>
+            <select id="metrica-${a.id}" onchange="dibujarGrafico('${a.id}')">
+              <option value="porcentaje_grasa_corporal">% Grasa corporal</option>
+              <option value="porcentaje_masa_muscular">% Masa muscular</option>
+              <option value="cuello">Cuello</option>
+              <option value="torso">Torso</option>
+              <option value="brazo_izq">Brazo izquierdo</option>
+              <option value="brazo_der">Brazo derecho</option>
+              <option value="cintura">Cintura</option>
+              <option value="cadera">Cadera</option>
+              <option value="cuadriceps_izq">Cuádriceps izquierdo</option>
+              <option value="cuadriceps_der">Cuádriceps derecho</option>
+              <option value="pantorrillas">Pantorrillas</option>
+            </select>
+            <div style="position:relative; height:220px; margin-top:12px;">
+              <canvas id="grafico-${a.id}"></canvas>
+            </div>
+
+            <div id="historial-${a.id}"></div>
+          </div>
+
+          <div class="panel-edicion" id="nutricion-${a.id}">
+            <div class="fila-2">
+              <div>
+                <label>Peso (kg)</label>
+                <input type="text" id="nut-peso-${a.id}" value="${a.peso ?? ""}">
+              </div>
+              <div>
+                <label>Altura (cm)</label>
+                <input type="text" id="nut-altura-${a.id}" value="${a.altura ?? ""}">
+              </div>
+            </div>
+            <div class="fila-2">
+              <div>
+                <label>Edad</label>
+                <input type="text" id="nut-edad-${a.id}" value="${a.edad ?? ""}">
+              </div>
+              <div>
+                <label>Nivel de actividad</label>
+                <select id="nut-actividad-${a.id}">
+                  <option value="sedentario" ${a.nivel_actividad==="sedentario"?"selected":""}>Sedentario</option>
+                  <option value="ligero" ${a.nivel_actividad==="ligero"?"selected":""}>Ligero</option>
+                  <option value="moderado" ${(!a.nivel_actividad || a.nivel_actividad==="moderado")?"selected":""}>Moderado</option>
+                  <option value="intenso" ${a.nivel_actividad==="intenso"?"selected":""}>Intenso</option>
+                </select>
+              </div>
+            </div>
+            <label>Objetivo</label>
+            <select id="nut-objetivo-${a.id}">
+              <option value="bajar_grasa" ${a.objetivo==="bajar_grasa"?"selected":""}>Déficit calórico</option>
+              <option value="mantener" ${(!a.objetivo || a.objetivo==="mantener")?"selected":""}>Mantenimiento</option>
+              <option value="ganar_musculo" ${a.objetivo==="ganar_musculo"?"selected":""}>Hipertrofia</option>
+            </select>
+            <button class="btn-principal" onclick="guardarDatosNutricionales('${a.id}')">Guardar y calcular meta</button>
+            <div id="meta-nutricional-${a.id}" class="sin-historial" style="margin-top:12px;">
+              ${(a.peso && a.altura && a.edad) ? "Guardá para ver la meta diaria calculada." : "Faltan datos para calcular la meta (peso, altura y edad)."}
+            </div>
+          </div>
+
+          <div class="panel-edicion" id="ejercicios-${a.id}"></div>
+        </div>
+      `);
+    });
+  }
+
+  function togglePanelNutricion(alumnoId){
+    const panel = document.getElementById("nutricion-" + alumnoId);
+    panel.style.display = panel.style.display === "block" ? "none" : "block";
+  }
+
+  async function guardarDatosNutricionales(alumnoId){
+    const peso = parseFloat(document.getElementById("nut-peso-" + alumnoId).value.replace(",", "."));
+    const altura = parseFloat(document.getElementById("nut-altura-" + alumnoId).value.replace(",", "."));
+    const edad = parseInt(document.getElementById("nut-edad-" + alumnoId).value, 10);
+    const objetivo = document.getElementById("nut-objetivo-" + alumnoId).value;
+    const actividad = document.getElementById("nut-actividad-" + alumnoId).value;
+
+    if(!peso || !altura || !edad){
+      alert("Completá peso, altura y edad para poder calcular la meta.");
+      return;
+    }
+
+    const boton = event.target;
+    boton.disabled = true;
+    boton.textContent = "Calculando...";
+
+    const { data, error } = await sb.rpc("coach_actualizar_datos_nutricionales", {
+      p_alumno_id: alumnoId,
+      p_peso: peso,
+      p_altura: altura,
+      p_edad: edad,
+      p_objetivo: objetivo,
+      p_nivel_actividad: actividad
+    });
+
+    boton.disabled = false;
+    boton.textContent = "Guardar y calcular meta";
+
+    const cont = document.getElementById("meta-nutricional-" + alumnoId);
+
+    if(error || !data || !data[0]){
+      cont.textContent = "Hubo un error calculando la meta.";
+      return;
+    }
+
+    cont.innerHTML = `Meta diaria: <strong>${data[0].calorias_objetivo} kcal</strong> · <strong>${data[0].proteina_objetivo_g} g de proteína</strong>`;
+  }
+
+  const graficos = {};
+  const datosMediciones = {};
+
+  function dibujarGrafico(alumnoId){
+    const datos = datosMediciones[alumnoId] || [];
+    const metrica = document.getElementById("metrica-" + alumnoId).value;
+    const ascendente = [...datos].reverse();
+
+    const labels = ascendente.map(m => formatFechaAR(m.fecha));
+    const valores = ascendente.map(m => m[metrica]);
+
+    if(graficos[alumnoId]) graficos[alumnoId].destroy();
+
+    const ctx = document.getElementById("grafico-" + alumnoId).getContext("2d");
+    graficos[alumnoId] = new Chart(ctx, {
+      type: "line",
+      data: {
+        labels,
+        datasets: [{
+          data: valores,
+          borderColor: "#c9e265",
+          backgroundColor: "rgba(201,226,101,.15)",
+          pointBackgroundColor: "#c9e265",
+          tension: 0.25,
+          fill: true,
+          spanGaps: true
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { color: "#8d948a" }, grid: { color: "#262a26" } },
+          y: { ticks: { color: "#8d948a" }, grid: { color: "#262a26" } }
+        }
+      }
+    });
+  }
+
+  function hoyISO(){
+    return new Date().toISOString().slice(0,10);
+  }
+
+  function togglePanelEdicion(alumnoId){
+    const panel = document.getElementById("edicion-" + alumnoId);
+    panel.style.display = panel.style.display === "block" ? "none" : "block";
+  }
+
+  function togglePanelMediciones(alumnoId){
+    const panel = document.getElementById("medicion-" + alumnoId);
+    const abrir = panel.style.display !== "block";
+    panel.style.display = abrir ? "block" : "none";
+    if(abrir) cargarHistorialMediciones(alumnoId);
+  }
+
+  async function guardarMedicion(alumnoId){
+    const val = (id) => {
+      const v = document.getElementById(id).value.trim();
+      return v === "" ? null : parseFloat(v.replace(",", "."));
+    };
+
+    const fila = {
+      alumno_id: alumnoId,
+      fecha: document.getElementById("med-fecha-" + alumnoId).value.trim() || hoyISO(),
+      cuello: val("med-cuello-" + alumnoId),
+      torso: val("med-torso-" + alumnoId),
+      brazo_izq: val("med-brazo-izq-" + alumnoId),
+      brazo_der: val("med-brazo-der-" + alumnoId),
+      cintura: val("med-cintura-" + alumnoId),
+      cadera: val("med-cadera-" + alumnoId),
+      cuadriceps_izq: val("med-cuad-izq-" + alumnoId),
+      cuadriceps_der: val("med-cuad-der-" + alumnoId),
+      pantorrillas: val("med-pantorrillas-" + alumnoId),
+      porcentaje_masa_muscular: val("med-masa-" + alumnoId),
+      porcentaje_grasa_corporal: val("med-grasa-" + alumnoId),
+      notas: document.getElementById("med-notas-" + alumnoId).value.trim() || null
+    };
+
+    const boton = event.target;
+    boton.disabled = true;
+    boton.textContent = "Guardando...";
+
+    const { error } = await sb.from("mediciones").insert(fila);
+
+    boton.disabled = false;
+    boton.textContent = "Guardar medición";
+
+    if(error){
+      alert("Hubo un error guardando la medición: " + error.message);
+      return;
+    }
+
+    ["cuello","torso","brazo-izq","brazo-der","cintura","cadera","cuad-izq","cuad-der","pantorrillas","masa","grasa"]
+      .forEach(campo => { document.getElementById("med-" + campo + "-" + alumnoId).value = ""; });
+    document.getElementById("med-notas-" + alumnoId).value = "";
+
+    cargarHistorialMediciones(alumnoId);
+  }
+
+  async function cargarHistorialMediciones(alumnoId){
+    const cont = document.getElementById("historial-" + alumnoId);
+    cont.innerHTML = `<div class="sin-historial">Cargando historial…</div>`;
+
+    const { data, error } = await sb
+      .from("mediciones")
+      .select("*")
+      .eq("alumno_id", alumnoId)
+      .order("fecha", { ascending:false });
+
+    if(error || !data || data.length === 0){
+      cont.innerHTML = `<div class="sin-historial">Todavía no hay mediciones cargadas.</div>`;
+      datosMediciones[alumnoId] = [];
+      if(graficos[alumnoId]){ graficos[alumnoId].destroy(); delete graficos[alumnoId]; }
+      return;
+    }
+
+    datosMediciones[alumnoId] = data;
+    dibujarGrafico(alumnoId);
+
+    let filas = data.map(m => `
+      <tr>
+        <td>${formatFechaAR(m.fecha)}</td>
+        <td>${m.cuello ?? "-"}</td>
+        <td>${m.torso ?? "-"}</td>
+        <td>${m.brazo_izq ?? "-"}</td>
+        <td>${m.brazo_der ?? "-"}</td>
+        <td>${m.cintura ?? "-"}</td>
+        <td>${m.cadera ?? "-"}</td>
+        <td>${m.cuadriceps_izq ?? "-"}</td>
+        <td>${m.cuadriceps_der ?? "-"}</td>
+        <td>${m.pantorrillas ?? "-"}</td>
+        <td>${m.porcentaje_masa_muscular ?? "-"}</td>
+        <td>${m.porcentaje_grasa_corporal ?? "-"}</td>
+      </tr>
+    `).join("");
+
+    cont.innerHTML = `
+      <div style="overflow-x:auto;">
+        <table class="tabla-historial">
+          <thead>
+            <tr>
+              <th>Fecha</th><th>Cuello</th><th>Torso</th><th>Brazo I</th><th>Brazo D</th>
+              <th>Cintura</th><th>Cadera</th><th>Cuád. I</th><th>Cuád. D</th><th>Pant.</th>
+              <th>% Masa</th><th>% Grasa</th>
+            </tr>
+          </thead>
+          <tbody>${filas}</tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  async function regenerarRutina(alumnoId){
+    const nombreRutina = document.getElementById("edit-nombre-" + alumnoId).value.trim() || "Rutina";
+    const perfil = document.getElementById("edit-perfil-" + alumnoId).value;
+    const dias = parseInt(document.getElementById("edit-dias-" + alumnoId).value, 10);
+    const semana = parseInt(document.getElementById("edit-semana-" + alumnoId).value, 10);
+
+    const boton = event.target;
+    boton.disabled = true;
+    boton.textContent = "Generando...";
+
+    const { error } = await sb.rpc("generar_rutina_semanal", {
+      p_alumno_id: alumnoId,
+      p_nombre_rutina: nombreRutina,
+      p_semana_mesociclo: semana,
+      p_perfil_biologico: perfil,
+      p_dias: dias
+    });
+
+    boton.disabled = false;
+    boton.textContent = "Generar esta rutina (reemplaza la actual)";
+
+    if(error){
+      alert("Hubo un error generando la rutina: " + error.message);
+      return;
+    }
+
+    alert("Rutina actualizada. El link del alumno no cambia, ya le muestra la nueva.");
+    cargarListaAlumnos();
+  }
+
+  // --- Editor de ejercicios por alumno ---
+  let rutinaPorAlumnoGlobal = {};
+  let catalogoEjerciciosCache = null;
+  const ORDEN_BLOQUES_EDITOR = ["Entrada en Calor", "Activacion Neuromuscular", "Fuerza - Hipertrofia", "Core", "Bloque HIT"];
+
+  async function obtenerCatalogo(){
+    if(catalogoEjerciciosCache) return catalogoEjerciciosCache;
+    const { data } = await sb.from("catalogo_ejercicios").select("nombre_ejercicio, bloque, zona_corporal").order("nombre_ejercicio");
+    catalogoEjerciciosCache = data || [];
+    return catalogoEjerciciosCache;
+  }
+
+  function opcionesCatalogoPorBloque(catalogo, bloque, seleccionado){
+    const filtrados = bloque === "Core"
+      ? catalogo.filter(e => e.zona_corporal === "Core")
+      : catalogo.filter(e => e.bloque === bloque);
+    return filtrados
+      .map(e => `<option value="${e.nombre_ejercicio}" ${e.nombre_ejercicio===seleccionado?"selected":""}>${e.nombre_ejercicio}</option>`)
+      .join("");
+  }
+
+  async function togglePanelEjercicios(alumnoId){
+    const panel = document.getElementById("ejercicios-" + alumnoId);
+    const abrir = panel.style.display !== "block";
+    panel.style.display = abrir ? "block" : "none";
+    if(abrir) await cargarEjerciciosRutina(alumnoId);
+  }
+
+  async function cargarEjerciciosRutina(alumnoId){
+    const panel = document.getElementById("ejercicios-" + alumnoId);
+    const rutina = rutinaPorAlumnoGlobal[alumnoId];
+
+    if(!rutina){
+      panel.innerHTML = `<div class="sin-historial">Este alumno todavía no tiene una rutina activa.</div>`;
+      return;
+    }
+
+    panel.innerHTML = `<div class="sin-historial">Cargando ejercicios…</div>`;
+    const catalogo = await obtenerCatalogo();
+
+    const { data: cargasBase } = await sb
+      .from("cargas_base")
+      .select("nombre_ejercicio, peso_rir1")
+      .eq("alumno_id", alumnoId);
+    const pesoBasePorEjercicio = {};
+    (cargasBase || []).forEach(c => { pesoBasePorEjercicio[c.nombre_ejercicio] = c.peso_rir1; });
+
+    const { data: ejercicios, error } = await sb
+      .from("rutina_ejercicios")
+      .select("*")
+      .eq("rutina_id", rutina.id)
+      .order("dia", { ascending:true })
+      .order("orden", { ascending:true });
+
+    if(error || !ejercicios){
+      panel.innerHTML = `<div class="sin-historial">No se pudo cargar la rutina.</div>`;
+      return;
+    }
+
+    const dias = {};
+    const nombresDias = {};
+    ejercicios.forEach(e => {
+      const d = e.dia ?? 1;
+      if(!dias[d]) dias[d] = [];
+      dias[d].push(e);
+      if(e.nombre_dia) nombresDias[d] = e.nombre_dia;
+    });
+
+    const ordenDias = Object.keys(dias).map(Number).sort((a,b)=>a-b);
+
+    let html = "";
+    ordenDias.forEach(dia => {
+      html += `<div class="dia-editor"><h3>${nombresDias[dia] || ("Dia " + dia)}</h3>`;
+
+      const bloques = {};
+      dias[dia].forEach(e => {
+        const b = e.bloque || "Otros";
+        if(!bloques[b]) bloques[b] = [];
+        bloques[b].push(e);
+      });
+
+      const ordenBloques = [...ORDEN_BLOQUES_EDITOR];
+      Object.keys(bloques).forEach(b => { if(!ordenBloques.includes(b)) ordenBloques.push(b); });
+
+      ordenBloques.forEach(bloque => {
+        html += `<div class="bloque-editor-titulo">${bloque}</div>`;
+        (bloques[bloque] || []).forEach(ej => {
+          html += `
+            <div class="fila-ejercicio-editor" id="fila-${ej.id}">
+              <select id="campo-nombre-${ej.id}">
+                ${opcionesCatalogoPorBloque(catalogo, bloque, ej.nombre_ejercicio)}
+              </select>
+              <div class="grid-campos-ej">
+                <div><label>Series</label><input type="text" id="campo-series-${ej.id}" value="${ej.series ?? ""}"></div>
+                <div><label>Reps min</label><input type="text" id="campo-repsmin-${ej.id}" value="${ej.reps_min ?? ""}"></div>
+                <div><label>Reps max</label><input type="text" id="campo-repsmax-${ej.id}" value="${ej.reps_max ?? ""}"></div>
+                <div><label>RIR</label><input type="text" id="campo-rir-${ej.id}" value="${ej.rir ?? ""}"></div>
+                <div><label>Descanso (s)</label><input type="text" id="campo-descanso-${ej.id}" value="${ej.descanso_seg ?? ""}"></div>
+                <div><label>Peso (kg)</label><input type="text" id="campo-peso-${ej.id}" value="${ej.peso_kg ?? ""}"></div>
+              </div>
+              <input type="text" class="notas-ej" id="campo-notas-${ej.id}" placeholder="Notas" value="${ej.notas ?? ""}">
+              ${bloque === "Fuerza - Hipertrofia" ? `
+                <div class="campo-peso-base">
+                  <label>Peso base a RIR 1</label>
+                  <input type="text" id="campo-pesobase-${ej.id}" value="${pesoBasePorEjercicio[ej.nombre_ejercicio] ?? ""}">
+                  <span class="unidad">kg</span>
+                </div>
+              ` : ""}
+              <div class="acciones-fila-ej">
+                <button class="btn-guardar-fila" onclick="guardarFilaEjercicio('${ej.id}', '${alumnoId}', '${bloque}')">Guardar</button>
+                <button class="btn-borrar-fila" onclick="borrarFilaEjercicio('${ej.id}','${alumnoId}')">Borrar ejercicio</button>
+              </div>
+            </div>
+          `;
+        });
+
+        const idSelectAgregar = `agregar-${dia}-${bloque.replace(/\s+/g,"_")}-${alumnoId}`;
+        html += `
+          <div class="agregar-ejercicio">
+            <select id="${idSelectAgregar}">${opcionesCatalogoPorBloque(catalogo, bloque)}</select>
+            <button onclick="agregarFilaEjercicio('${rutina.id}', ${dia}, '${(nombresDias[dia]||"Dia "+dia).replace(/'/g,"\\'")}', '${bloque}', '${idSelectAgregar}', '${alumnoId}')">+ Agregar</button>
+          </div>
+        `;
+      });
+
+      html += `</div>`;
+    });
+
+    panel.innerHTML = html || `<div class="sin-historial">Esta rutina no tiene ejercicios cargados.</div>`;
+  }
+
+  async function guardarFilaEjercicio(ejercicioId, alumnoId, bloque){
+    const val = (id) => {
+      const v = document.getElementById(id).value.trim();
+      return v === "" ? null : (isNaN(v) ? v : parseFloat(v.replace(",", ".")));
+    };
+
+    const fila = document.getElementById("fila-" + ejercicioId);
+    const boton = fila.querySelector(".btn-guardar-fila");
+    boton.disabled = true;
+    boton.textContent = "Guardando...";
+
+    const nombreEjercicio = document.getElementById("campo-nombre-" + ejercicioId).value;
+    const NOTA_AUTOMATICA = "Sin peso base cargado - definir con el coach";
+
+    let pesoFinal = val("campo-peso-" + ejercicioId);
+    let notasFinal = document.getElementById("campo-notas-" + ejercicioId).value.trim() || null;
+
+    let errorPeso = null;
+    if(bloque === "Fuerza - Hipertrofia"){
+      const inputPesoBase = document.getElementById("campo-pesobase-" + ejercicioId);
+      const pesoBase = parseFloat((inputPesoBase.value || "").replace(",", "."));
+      if(pesoBase && pesoBase > 0){
+        const resultado = await sb.from("cargas_base").upsert(
+          { alumno_id: alumnoId, nombre_ejercicio: nombreEjercicio, peso_rir1: pesoBase },
+          { onConflict: "alumno_id,nombre_ejercicio" }
+        );
+        errorPeso = resultado.error;
+
+        // Si no habia peso cargado o la nota era la automatica, recalculamos ahora mismo
+        if(!errorPeso && (pesoFinal === null || notasFinal === NOTA_AUTOMATICA)){
+          const rutina = rutinaPorAlumnoGlobal[alumnoId];
+          const rir = rutina ? rutina.rir_objetivo : 4;
+          pesoFinal = Math.round((pesoBase * (1 - 0.025 * (rir - 1))) / 2.5) * 2.5;
+          if(notasFinal === NOTA_AUTOMATICA) notasFinal = null;
+
+          document.getElementById("campo-peso-" + ejercicioId).value = pesoFinal;
+          document.getElementById("campo-notas-" + ejercicioId).value = notasFinal || "";
+        }
+      }
+    }
+
+    const { error } = await sb.from("rutina_ejercicios").update({
+      nombre_ejercicio: nombreEjercicio,
+      series: val("campo-series-" + ejercicioId),
+      reps_min: val("campo-repsmin-" + ejercicioId),
+      reps_max: val("campo-repsmax-" + ejercicioId),
+      rir: val("campo-rir-" + ejercicioId),
+      descanso_seg: val("campo-descanso-" + ejercicioId),
+      peso_kg: pesoFinal,
+      notas: notasFinal
+    }).eq("id", ejercicioId);
+
+    boton.disabled = false;
+    boton.textContent = (error || errorPeso) ? "Error" : "Guardado ✓";
+    setTimeout(() => { boton.textContent = "Guardar"; }, 1500);
+
+    if(error) alert("Error guardando el ejercicio: " + error.message);
+    if(errorPeso) alert("Error guardando el peso base: " + errorPeso.message);
+  }
+
+  async function borrarFilaEjercicio(ejercicioId, alumnoId){
+    if(!confirm("¿Borrar este ejercicio de la rutina?")) return;
+    const { error } = await sb.from("rutina_ejercicios").delete().eq("id", ejercicioId);
+    if(error){
+      alert("Error borrando: " + error.message);
+      return;
+    }
+    await cargarEjerciciosRutina(alumnoId);
+  }
+
+  async function agregarFilaEjercicio(rutinaId, dia, nombreDia, bloque, idSelect, alumnoId){
+    const nombreEjercicio = document.getElementById(idSelect).value;
+    const rutina = rutinaPorAlumnoGlobal[alumnoId];
+    const rir = rutina ? rutina.rir_objetivo : 4;
+
+    const { data: maxOrdenData } = await sb
+      .from("rutina_ejercicios")
+      .select("orden")
+      .eq("rutina_id", rutinaId)
+      .eq("dia", dia)
+      .order("orden", { ascending:false })
+      .limit(1);
+
+    const nuevoOrden = (maxOrdenData && maxOrdenData[0] ? maxOrdenData[0].orden : 0) + 1;
+
+    const { error } = await sb.from("rutina_ejercicios").insert({
+      rutina_id: rutinaId,
+      dia: dia,
+      nombre_dia: nombreDia,
+      bloque: bloque,
+      orden: nuevoOrden,
+      nombre_ejercicio: nombreEjercicio,
+      series: bloque === "Fuerza - Hipertrofia" ? 4 : (bloque === "Entrada en Calor" ? 1 : 2),
+      reps_min: 10,
+      reps_max: 12,
+      rir: bloque === "Fuerza - Hipertrofia" ? rir : null,
+      descanso_seg: bloque === "Fuerza - Hipertrofia" ? 90 : 30
+    });
+
+    if(error){
+      alert("Error agregando el ejercicio: " + error.message);
+      return;
+    }
+    await cargarEjerciciosRutina(alumnoId);
+  }
+
+</script>
+
+</body>
+</html>

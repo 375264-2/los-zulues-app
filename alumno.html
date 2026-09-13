@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Mi rutina — LOS ZULUES TRIBU FITNESS</title>
+<style>
+  :root{
+    --bg: #0d0f0d;
+    --bg-card: #161916;
+    --line: #262a26;
+    --text: #eef0ea;
+    --text-dim: #8d948a;
+    --accent: #c9e265;
+    --multi: #c9e265;
+    --mono: #6ea8c9;
+    --core: #d98f5e;
+    --danger: #e2665a;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    min-height:100vh;
+    padding-bottom:40px;
+  }
+  .num{
+    font-family:"SF Mono","Menlo","Consolas",monospace;
+  }
+
+  header{
+    padding:22px 20px 16px;
+    border-bottom:1px solid var(--line);
+    position:sticky; top:0;
+    background:rgba(13,15,13,0.94);
+    backdrop-filter:blur(6px);
+    z-index:10;
+  }
+  header .marca{
+    font-size:11px;
+    letter-spacing:.14em;
+    color:var(--text-dim);
+    margin-bottom:6px;
+  }
+  header h1{
+    margin:0;
+    font-size:22px;
+    font-weight:650;
+    letter-spacing:-0.01em;
+  }
+  header .meta{
+    margin-top:8px;
+    display:flex;
+    gap:14px;
+    font-size:13px;
+    color:var(--text-dim);
+  }
+  header .meta span.num{ color:var(--text); }
+  .link-comidas{
+    display:inline-block;
+    margin-top:10px;
+    font-size:12.5px;
+    color:var(--accent);
+    text-decoration:none;
+    border:1px solid var(--accent);
+    padding:6px 12px;
+    border-radius:8px;
+  }
+
+  .estado{
+    max-width:520px; margin:60px auto; padding:0 24px;
+    text-align:center; color:var(--text-dim); font-size:15px; line-height:1.6;
+  }
+
+  .tabs{
+    display:flex; flex-wrap:wrap;
+    padding:14px 16px 0;
+    gap:6px;
+  }
+  .tab-input{ display:none; }
+  .tab-label{
+    flex:0 0 auto;
+    padding:9px 14px;
+    border-radius:8px;
+    font-size:13px;
+    color:var(--text-dim);
+    border:1px solid var(--line);
+    white-space:nowrap;
+    cursor:pointer;
+    user-select:none;
+  }
+  .tab-input:checked + .tab-label{
+    color:var(--bg);
+    background:var(--accent);
+    border-color:var(--accent);
+    font-weight:600;
+  }
+
+  .bloque-panel{ display:none; padding:18px 16px 0; }
+  .bloque-titulo{
+    font-size:12px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--text-dim);
+    margin:18px 0 8px;
+  }
+  .bloque-titulo:first-child{ margin-top:0; }
+
+  main{ max-width:640px; margin:0 auto; }
+
+  .ejercicio{
+    background:var(--bg-card);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:14px 16px;
+    margin-bottom:10px;
+    display:flex;
+    align-items:flex-start;
+    gap:12px;
+  }
+  .ejercicio .chk{
+    width:22px; height:22px;
+    flex:0 0 22px;
+    border-radius:6px;
+    border:1.5px solid var(--line);
+    margin-top:2px;
+    -webkit-appearance:none; appearance:none;
+    cursor:pointer;
+  }
+  .ejercicio .chk:checked{
+    background:var(--accent);
+    border-color:var(--accent);
+  }
+  .ejercicio.hecho{ opacity:.45; }
+  .ejercicio.hecho .nombre{ text-decoration:line-through; }
+
+  .ejercicio .cuerpo{ flex:1; min-width:0; }
+  .fila-top{
+    display:flex; justify-content:space-between; align-items:baseline;
+    gap:10px; margin-bottom:4px;
+  }
+  .nombre{ font-size:15px; font-weight:600; }
+  .badge{
+    font-size:10px;
+    padding:2px 7px;
+    border-radius:5px;
+    flex:0 0 auto;
+    font-weight:700;
+  }
+  .badge.MULTI{ background:rgba(201,226,101,.15); color:var(--multi); }
+  .badge.MONO{ background:rgba(110,168,201,.15); color:var(--mono); }
+  .badge.CORE{ background:rgba(217,143,94,.15); color:var(--core); }
+
+  .datos{
+    display:flex; gap:16px;
+    font-size:13px; color:var(--text-dim);
+  }
+  .datos .num{ color:var(--text); font-weight:600; }
+  .notas{
+    margin-top:6px;
+    font-size:12.5px;
+    color:var(--text-dim);
+    font-style:italic;
+  }
+
+  footer{
+    text-align:center;
+    color:var(--text-dim);
+    font-size:12px;
+    padding:28px 20px 0;
+  }
+
+  .seccion-evolucion{
+    max-width:640px; margin:24px auto 0; padding:0 16px;
+  }
+  .seccion-evolucion h2{
+    font-size:15px;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    color:var(--text-dim);
+    margin:0 0 12px;
+  }
+  .seccion-evolucion select{
+    width:100%;
+    background:var(--bg-card);
+    border:1px solid var(--line);
+    color:var(--text);
+    padding:11px 12px;
+    border-radius:8px;
+    font-size:15px;
+  }
+  .sin-evolucion{ color:var(--text-dim); font-size:13px; margin-top:10px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="marca">LOS ZULUES TRIBU FITNESS</div>
+  <h1 id="nombre-alumno">Cargando…</h1>
+  <div class="meta" id="meta-rutina"></div>
+  <a class="link-comidas" id="link-comidas" href="#">🍽️ Registrar mi alimentación</a>
+</header>
+
+<main>
+  <div id="estado" class="estado"></div>
+  <div id="tabs" class="tabs" style="display:none;"></div>
+  <div id="paneles"></div>
+</main>
+
+<section class="seccion-evolucion" id="seccion-evolucion" style="display:none;">
+  <h2>Tu evolución</h2>
+  <select id="metrica-evolucion" onchange="dibujarGraficoEvolucion()">
+    <option value="porcentaje_grasa_corporal">% Grasa corporal</option>
+    <option value="porcentaje_masa_muscular">% Masa muscular</option>
+    <option value="cuello">Cuello</option>
+    <option value="torso">Torso</option>
+    <option value="brazo_izq">Brazo izquierdo</option>
+    <option value="brazo_der">Brazo derecho</option>
+    <option value="cintura">Cintura</option>
+    <option value="cadera">Cadera</option>
+    <option value="cuadriceps_izq">Cuádriceps izquierdo</option>
+    <option value="cuadriceps_der">Cuádriceps derecho</option>
+    <option value="pantorrillas">Pantorrillas</option>
+  </select>
+  <div style="position:relative; height:220px; margin-top:12px;">
+    <canvas id="grafico-evolucion"></canvas>
+  </div>
+</section>
+
+<footer>Deslizá para marcar cada ejercicio como hecho.</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<script>
+  const SUPABASE_URL = "https://yrwbhzfbcomwojplrfrb.supabase.co";
+  const SUPABASE_KEY = "sb_publishable_2O5mIe_yCnMRdF1ppZIQrg_3aWF1MED";
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  const ORDEN_BLOQUES = ["Entrada en Calor", "Activacion Neuromuscular", "Fuerza - Hipertrofia", "Core", "Bloque HIT"];
+
+  function tipoBadge(tipo){
+    const t = (tipo||"").toUpperCase();
+    if(t.includes("MULTI")) return "MULTI";
+    if(t.includes("MONO")) return "MONO";
+    if(t.includes("CORE")) return "CORE";
+    return null;
+  }
+
+  function mostrarEstado(msg){
+    document.getElementById("estado").textContent = msg;
+  }
+
+  async function cargar(){
+    const params = new URLSearchParams(window.location.search);
+    const alumnoId = params.get("id");
+
+    if(!alumnoId){
+      mostrarEstado("Falta el enlace correcto. Pedile a tu coach que te reenvíe el link de tu rutina.");
+      return;
+    }
+
+    const { data: alumno, error: errAlumno } = await sb
+      .from("alumnos")
+      .select("id, nombre")
+      .eq("id", alumnoId)
+      .single();
+
+    if(errAlumno || !alumno){
+      mostrarEstado("No encontramos tu ficha. Pedile a tu coach que revise el enlace.");
+      return;
+    }
+
+    document.getElementById("nombre-alumno").textContent = alumno.nombre;
+    cargarEvolucion(alumnoId);
+    document.getElementById("link-comidas").href = "comidas.html?id=" + alumnoId;
+
+    const { data: rutina, error: errRutina } = await sb
+      .from("rutinas")
+      .select("id, nombre_rutina, semana_mesociclo, rir_objetivo")
+      .eq("alumno_id", alumnoId)
+      .eq("activa", true)
+      .order("creado_en", { ascending:false })
+      .limit(1)
+      .maybeSingle();
+
+    if(errRutina || !rutina){
+      mostrarEstado("Todavía no tenés una rutina activa. Tu coach te va a avisar cuando esté lista.");
+      return;
+    }
+
+    document.getElementById("meta-rutina").innerHTML =
+      `<span>${rutina.nombre_rutina}</span>` +
+      `<span>Semana <span class="num">${rutina.semana_mesociclo}</span></span>` +
+      `<span>RIR <span class="num">${rutina.rir_objetivo}</span></span>`;
+
+    const { data: ejercicios, error: errEj } = await sb
+      .from("rutina_ejercicios")
+      .select("*")
+      .eq("rutina_id", rutina.id)
+      .order("dia", { ascending:true })
+      .order("orden", { ascending:true });
+
+    if(errEj || !ejercicios || ejercicios.length === 0){
+      mostrarEstado("Esta rutina todavía no tiene ejercicios cargados.");
+      return;
+    }
+
+    renderizar(ejercicios);
+  }
+
+  function renderizar(ejercicios){
+    document.getElementById("estado").style.display = "none";
+
+    const dias = {};
+    const nombresDias = {};
+    ejercicios.forEach(e => {
+      const d = e.dia ?? 1;
+      if(!dias[d]) dias[d] = [];
+      dias[d].push(e);
+      if(e.nombre_dia) nombresDias[d] = e.nombre_dia;
+    });
+
+    const ordenDias = Object.keys(dias).map(Number).sort((a,b) => a-b);
+
+    const tabsEl = document.getElementById("tabs");
+    const panelesEl = document.getElementById("paneles");
+    tabsEl.style.display = "flex";
+
+    ordenDias.forEach((dia, i) => {
+      const id = "tab-" + i;
+      const etiqueta = nombresDias[dia] || ("Dia " + dia);
+      tabsEl.insertAdjacentHTML("beforeend", `
+        <input type="radio" name="dia" id="${id}" class="tab-input" ${i===0 ? "checked":""} onclick="mostrarPanel(${i})">
+        <label for="${id}" class="tab-label">${etiqueta}</label>
+      `);
+
+      const panel = document.createElement("div");
+      panel.className = "bloque-panel";
+      panel.id = "panel-" + i;
+      panel.style.display = i===0 ? "block" : "none";
+
+      const bloquesDelDia = {};
+      dias[dia].forEach(e => {
+        const b = e.bloque || "Otros";
+        if(!bloquesDelDia[b]) bloquesDelDia[b] = [];
+        bloquesDelDia[b].push(e);
+      });
+
+      const ordenBloques = ORDEN_BLOQUES.filter(b => bloquesDelDia[b]);
+      Object.keys(bloquesDelDia).forEach(b => { if(!ordenBloques.includes(b)) ordenBloques.push(b); });
+
+      ordenBloques.forEach(bloque => {
+        panel.insertAdjacentHTML("beforeend", `<div class="bloque-titulo">${bloque}</div>`);
+        bloquesDelDia[bloque].forEach(ej => {
+          const badge = tipoBadge(ej.tipo);
+          panel.insertAdjacentHTML("beforeend", `
+            <div class="ejercicio" id="ej-${ej.id}">
+              <input type="checkbox" class="chk" onchange="toggleHecho('${ej.id}')">
+              <div class="cuerpo">
+                <div class="fila-top">
+                  <div class="nombre">${ej.nombre_ejercicio}</div>
+                  ${badge ? `<div class="badge ${badge}">${badge}</div>` : ""}
+                </div>
+                <div class="datos">
+                  <span><span class="num">${ej.series}</span> series</span>
+                  <span><span class="num">${ej.reps_min}-${ej.reps_max}</span> reps</span>
+                  ${ej.peso_kg ? `<span><span class="num">${ej.peso_kg}</span> kg</span>` : ""}
+                  <span>RIR <span class="num">${ej.rir ?? "-"}</span></span>
+                  <span><span class="num">${ej.descanso_seg ?? "-"}</span>s desc.</span>
+                </div>
+                ${ej.notas ? `<div class="notas">${ej.notas}</div>` : ""}
+              </div>
+            </div>
+          `);
+        });
+      });
+
+      panelesEl.appendChild(panel);
+    });
+  }
+
+  window.mostrarPanel = function(i){
+    document.querySelectorAll(".bloque-panel").forEach(p => p.style.display = "none");
+    document.getElementById("panel-" + i).style.display = "block";
+  };
+
+  window.toggleHecho = function(id){
+    document.getElementById("ej-" + id).classList.toggle("hecho");
+  };
+
+  function formatFechaAR(fechaISO){
+    if(!fechaISO) return "-";
+    const [anio, mes, dia] = fechaISO.split("-");
+    return `${dia}/${mes}/${anio}`;
+  }
+
+  let datosMedicionesAlumno = [];
+  let graficoEvolucion = null;
+
+  async function cargarEvolucion(alumnoId){
+    const { data, error } = await sb
+      .from("mediciones")
+      .select("*")
+      .eq("alumno_id", alumnoId)
+      .order("fecha", { ascending:false });
+
+    if(error || !data || data.length === 0){
+      return; // sin mediciones todavia, no mostramos la seccion
+    }
+
+    datosMedicionesAlumno = data;
+    document.getElementById("seccion-evolucion").style.display = "block";
+    dibujarGraficoEvolucion();
+  }
+
+  function dibujarGraficoEvolucion(){
+    const metrica = document.getElementById("metrica-evolucion").value;
+    const ascendente = [...datosMedicionesAlumno].reverse();
+    const labels = ascendente.map(m => formatFechaAR(m.fecha));
+    const valores = ascendente.map(m => m[metrica]);
+
+    if(graficoEvolucion) graficoEvolucion.destroy();
+
+    const ctx = document.getElementById("grafico-evolucion").getContext("2d");
+    graficoEvolucion = new Chart(ctx, {
+      type: "line",
+      data: {
+        labels,
+        datasets: [{
+          data: valores,
+          borderColor: "#c9e265",
+          backgroundColor: "rgba(201,226,101,.15)",
+          pointBackgroundColor: "#c9e265",
+          tension: 0.25,
+          fill: true,
+          spanGaps: true
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { color: "#8d948a" }, grid: { color: "#262a26" } },
+          y: { ticks: { color: "#8d948a" }, grid: { color: "#262a26" } }
+        }
+      }
+    });
+  }
+
+  cargar();
+</script>
+
+</body>
+</html>

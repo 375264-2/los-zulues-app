@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Mi alimentación — LOS ZULUES TRIBU FITNESS</title>
+<style>
+  :root{
+    --bg: #0d0f0d;
+    --bg-card: #161916;
+    --line: #262a26;
+    --text: #eef0ea;
+    --text-dim: #8d948a;
+    --accent: #c9e265;
+    --danger: #e2665a;
+    --ok: #6ea8c9;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    min-height:100vh;
+    padding-bottom:50px;
+  }
+  .num{ font-family:"SF Mono","Menlo","Consolas",monospace; }
+
+  header{
+    padding:22px 20px 16px;
+    border-bottom:1px solid var(--line);
+    position:sticky; top:0;
+    background:rgba(13,15,13,0.94);
+    backdrop-filter:blur(6px);
+    z-index:10;
+  }
+  header .marca{ font-size:11px; letter-spacing:.14em; color:var(--text-dim); margin-bottom:6px; }
+  header h1{ margin:0; font-size:22px; font-weight:650; }
+
+  main{ max-width:560px; margin:0 auto; padding:16px; }
+
+  .resumen{
+    background:var(--bg-card);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:18px;
+  }
+  .resumen .fila-meta{
+    display:flex; justify-content:space-between; align-items:baseline;
+    margin-bottom:10px;
+  }
+  .resumen .fila-meta:last-child{ margin-bottom:0; }
+  .resumen .etiqueta{ font-size:13px; color:var(--text-dim); }
+  .resumen .valor{ font-size:15px; font-weight:700; }
+  .barra-fondo{
+    background:#0d0f0d; border:1px solid var(--line);
+    border-radius:8px; height:10px; overflow:hidden; margin-top:4px;
+  }
+  .barra-relleno{ background:var(--accent); height:100%; border-radius:8px; transition:width .3s; }
+  .mensaje-falta{
+    margin-top:14px; padding:12px; border-radius:10px;
+    background:rgba(201,226,101,.1); border:1px solid var(--accent);
+    font-size:13.5px; text-align:center;
+  }
+  .mensaje-falta.completo{
+    background:rgba(110,168,201,.12); border-color:var(--ok);
+  }
+
+  .franjas{
+    display:grid; grid-template-columns:repeat(5,1fr);
+    gap:6px; margin:18px 0 6px;
+  }
+  .franja-btn{
+    background:var(--bg-card); border:1px solid var(--line); color:var(--text-dim);
+    border-radius:9px; padding:9px 4px; font-size:11px; text-align:center; cursor:pointer;
+  }
+  .franja-btn.activa{ background:var(--accent); color:var(--bg); border-color:var(--accent); font-weight:700; }
+
+  .zona-voz{
+    background:var(--bg-card); border:1px solid var(--line); border-radius:14px;
+    padding:20px; text-align:center; margin-top:10px;
+  }
+  .boton-mic{
+    width:72px; height:72px; border-radius:50%;
+    background:var(--accent); border:none; cursor:pointer;
+    font-size:28px; display:flex; align-items:center; justify-content:center;
+    margin:0 auto;
+  }
+  .boton-mic.grabando{ background:var(--danger); animation:pulso 1.2s infinite; }
+  @keyframes pulso{ 0%{box-shadow:0 0 0 0 rgba(226,102,90,.5);} 100%{box-shadow:0 0 0 16px rgba(226,102,90,0);} }
+  .estado-voz{ margin-top:10px; font-size:13px; color:var(--text-dim); }
+
+  .transcripcion{
+    margin-top:16px; text-align:left;
+    display:none;
+  }
+  .transcripcion textarea{
+    width:100%; min-height:70px;
+    background:#0d0f0d; border:1px solid var(--line); color:var(--text);
+    border-radius:10px; padding:12px; font-size:15px; resize:vertical;
+  }
+  .transcripcion .btn-principal{
+    width:100%; background:var(--accent); color:var(--bg); border:none;
+    padding:13px; border-radius:10px; font-weight:700; font-size:14px;
+    margin-top:10px; cursor:pointer;
+  }
+  .transcripcion .btn-principal:disabled{ opacity:.5; }
+
+  .resultado-comida{
+    display:none; margin-top:14px; padding:12px 14px;
+    background:rgba(201,226,101,.08); border:1px solid var(--line);
+    border-radius:10px; font-size:13.5px;
+  }
+
+  .lista-hoy{ margin-top:22px; }
+  .lista-hoy h2{
+    font-size:13px; text-transform:uppercase; letter-spacing:.06em;
+    color:var(--text-dim); margin:0 0 10px;
+  }
+  .item-comida{
+    background:var(--bg-card); border:1px solid var(--line); border-radius:10px;
+    padding:12px 14px; margin-bottom:8px;
+    display:flex; justify-content:space-between; align-items:flex-start; gap:10px;
+  }
+  .item-comida .contenido{ flex:1; min-width:0; }
+  .item-comida .franja-nombre{ font-size:12px; color:var(--accent); font-weight:700; }
+  .item-comida .texto{ font-size:14px; margin:4px 0; }
+  .item-comida .macros{ font-size:12px; color:var(--text-dim); }
+  .item-comida .btn-borrar{
+    flex:0 0 auto; background:none; border:1px solid var(--line); color:var(--danger);
+    border-radius:8px; padding:6px 10px; font-size:12px; cursor:pointer;
+  }
+  .sin-comidas{ color:var(--text-dim); font-size:13.5px; }
+
+  .aviso-navegador{
+    background:rgba(226,102,90,.1); border:1px solid var(--danger);
+    color:var(--text); border-radius:10px; padding:12px 14px; font-size:13px;
+    margin-top:12px; display:none;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="marca">LOS ZULUES TRIBU FITNESS</div>
+  <h1 id="nombre-alumno">Cargando…</h1>
+</header>
+
+<main>
+  <div id="estado-general" style="color:var(--text-dim); font-size:14px;"></div>
+
+  <div id="contenido" style="display:none;">
+    <div class="resumen">
+      <div class="fila-meta">
+        <span class="etiqueta">Proteína de hoy</span>
+        <span class="valor num" id="valor-proteina">0 / 0 g</span>
+      </div>
+      <div class="barra-fondo"><div class="barra-relleno" id="barra-proteina" style="width:0%;"></div></div>
+
+      <div class="fila-meta" style="margin-top:14px;">
+        <span class="etiqueta">Calorías de hoy</span>
+        <span class="valor num" id="valor-calorias">0 / 0 kcal</span>
+      </div>
+      <div class="barra-fondo"><div class="barra-relleno" id="barra-calorias" style="width:0%;"></div></div>
+
+      <div class="mensaje-falta" id="mensaje-falta"></div>
+    </div>
+
+    <div class="franjas" id="franjas"></div>
+
+    <div class="zona-voz">
+      <button class="boton-mic" id="boton-mic" onclick="alternarGrabacion()">🎙️</button>
+      <div class="estado-voz" id="estado-voz">Tocá el micrófono y contame qué comiste</div>
+      <div class="aviso-navegador" id="aviso-navegador">
+        Tu navegador no soporta el reconocimiento de voz. Probá abrir este link en Chrome.
+      </div>
+
+      <div class="transcripcion" id="zona-transcripcion">
+        <textarea id="texto-comida" placeholder="Lo que dijiste aparece acá, podés editarlo antes de guardar"></textarea>
+        <button class="btn-principal" id="btn-analizar" onclick="analizarYGuardar()">Analizar y guardar</button>
+      </div>
+
+      <div class="resultado-comida" id="resultado-comida"></div>
+    </div>
+
+    <div class="lista-hoy">
+      <h2>Hoy registraste</h2>
+      <div id="lista-comidas-hoy"></div>
+    </div>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+  const SUPABASE_URL = "https://yrwbhzfbcomwojplrfrb.supabase.co";
+  const SUPABASE_KEY = "sb_publishable_2O5mIe_yCnMRdF1ppZIQrg_3aWF1MED";
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  const URL_FUNCION_ANALIZAR = SUPABASE_URL + "/functions/v1/analizar-comida";
+
+  const FRANJAS = ["Desayuno", "Media Mañana", "Almuerzo", "Media Tarde", "Cena"];
+  let franjaActiva = FRANJAS[0];
+  let alumnoIdGlobal = null;
+  let metaProteina = 0;
+  let metaCalorias = 0;
+
+  function hoyISO(){ return new Date().toISOString().slice(0,10); }
+
+  async function iniciar(){
+    const params = new URLSearchParams(window.location.search);
+    const alumnoId = params.get("id");
+
+    if(!alumnoId){
+      document.getElementById("estado-general").textContent = "Falta el enlace correcto. Pedile a tu coach que te reenvíe el link.";
+      return;
+    }
+    alumnoIdGlobal = alumnoId;
+
+    const { data: alumno, error } = await sb.from("alumnos").select("id, nombre").eq("id", alumnoId).single();
+    if(error || !alumno){
+      document.getElementById("estado-general").textContent = "No encontramos tu ficha.";
+      return;
+    }
+    document.getElementById("nombre-alumno").textContent = alumno.nombre;
+
+    const { data: metas } = await sb.rpc("calcular_metas_nutricionales", { p_alumno_id: alumnoId });
+    if(metas && metas[0] && metas[0].calorias_objetivo){
+      metaCalorias = metas[0].calorias_objetivo;
+      metaProteina = metas[0].proteina_objetivo_g;
+    }
+
+    renderizarFranjas();
+    document.getElementById("contenido").style.display = "block";
+    await actualizarResumenYLista();
+  }
+
+  function renderizarFranjas(){
+    const cont = document.getElementById("franjas");
+    cont.innerHTML = "";
+    FRANJAS.forEach(f => {
+      const btn = document.createElement("div");
+      btn.className = "franja-btn" + (f === franjaActiva ? " activa" : "");
+      btn.textContent = f;
+      btn.onclick = () => {
+        franjaActiva = f;
+        renderizarFranjas();
+      };
+      cont.appendChild(btn);
+    });
+  }
+
+  async function actualizarResumenYLista(){
+    const { data: comidasHoy } = await sb
+      .from("comidas")
+      .select("*")
+      .eq("alumno_id", alumnoIdGlobal)
+      .eq("fecha", hoyISO())
+      .order("creado_en", { ascending:true });
+
+    const lista = comidasHoy || [];
+    const totalProteina = lista.reduce((s,c) => s + (c.proteinas_g || 0), 0);
+    const totalCalorias = lista.reduce((s,c) => s + (c.calorias || 0), 0);
+
+    document.getElementById("valor-proteina").textContent =
+      `${Math.round(totalProteina)} / ${metaProteina || "-"} g`;
+    document.getElementById("valor-calorias").textContent =
+      `${Math.round(totalCalorias)} / ${metaCalorias || "-"} kcal`;
+
+    if(metaProteina){
+      const pct = Math.min(100, (totalProteina / metaProteina) * 100);
+      document.getElementById("barra-proteina").style.width = pct + "%";
+      const restante = Math.max(0, Math.round(metaProteina - totalProteina));
+      const cajaMsg = document.getElementById("mensaje-falta");
+      if(restante > 0){
+        cajaMsg.textContent = `Te faltan ${restante} g de proteína para llegar a tu meta de hoy.`;
+        cajaMsg.classList.remove("completo");
+      } else {
+        cajaMsg.textContent = "¡Meta de proteína del día cumplida!";
+        cajaMsg.classList.add("completo");
+      }
+    }
+    if(metaCalorias){
+      const pctCal = Math.min(100, (totalCalorias / metaCalorias) * 100);
+      document.getElementById("barra-calorias").style.width = pctCal + "%";
+    }
+
+    const contLista = document.getElementById("lista-comidas-hoy");
+    if(lista.length === 0){
+      contLista.innerHTML = `<div class="sin-comidas">Todavía no registraste ninguna comida hoy.</div>`;
+      return;
+    }
+    contLista.innerHTML = lista.map(c => `
+      <div class="item-comida">
+        <div class="contenido">
+          <div class="franja-nombre">${c.franja}</div>
+          <div class="texto">${c.texto_transcripto}</div>
+          <div class="macros">${Math.round(c.calorias||0)} kcal · ${Math.round(c.proteinas_g||0)}g prot · ${Math.round(c.carbohidratos_g||0)}g carb · ${Math.round(c.grasas_g||0)}g grasa</div>
+        </div>
+        <button class="btn-borrar" onclick="borrarComida('${c.id}')">Borrar</button>
+      </div>
+    `).join("");
+  }
+
+  async function borrarComida(comidaId){
+    if(!confirm("¿Borrar este registro?")) return;
+    const { error } = await sb.from("comidas").delete().eq("id", comidaId);
+    if(error){
+      alert("No se pudo borrar: " + error.message);
+      return;
+    }
+    await actualizarResumenYLista();
+  }
+
+  // --- Reconocimiento de voz ---
+  let reconocimiento = null;
+  let grabando = false;
+
+  function iniciarReconocimiento(){
+    const Reconocedor = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if(!Reconocedor){
+      document.getElementById("aviso-navegador").style.display = "block";
+      return null;
+    }
+    const r = new Reconocedor();
+    r.lang = "es-AR";
+    r.interimResults = false;
+    r.maxAlternatives = 1;
+    return r;
+  }
+
+  function alternarGrabacion(){
+    if(grabando){
+      if(reconocimiento) reconocimiento.stop();
+      return;
+    }
+
+    reconocimiento = iniciarReconocimiento();
+    if(!reconocimiento) return;
+
+    grabando = true;
+    document.getElementById("boton-mic").classList.add("grabando");
+    document.getElementById("estado-voz").textContent = "Escuchando... contame qué comiste en " + franjaActiva.toLowerCase();
+
+    reconocimiento.onresult = (evento) => {
+      const texto = evento.results[0][0].transcript;
+      document.getElementById("texto-comida").value = texto;
+      document.getElementById("zona-transcripcion").style.display = "block";
+    };
+
+    reconocimiento.onerror = () => {
+      document.getElementById("estado-voz").textContent = "No te escuché bien, tocá el micrófono y probá de nuevo.";
+    };
+
+    reconocimiento.onend = () => {
+      grabando = false;
+      document.getElementById("boton-mic").classList.remove("grabando");
+      document.getElementById("estado-voz").textContent = "Tocá el micrófono y contame qué comiste";
+    };
+
+    reconocimiento.start();
+  }
+
+  async function analizarYGuardar(){
+    const texto = document.getElementById("texto-comida").value.trim();
+    if(!texto){
+      alert("Todavía no hay nada para analizar.");
+      return;
+    }
+
+    const boton = document.getElementById("btn-analizar");
+    boton.disabled = true;
+    boton.textContent = "Analizando con IA...";
+
+    try{
+      const resp = await fetch(URL_FUNCION_ANALIZAR, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ alumno_id: alumnoIdGlobal, franja: franjaActiva, texto })
+      });
+      const data = await resp.json();
+
+      if(!resp.ok || data.error){
+        document.getElementById("resultado-comida").style.display = "block";
+        document.getElementById("resultado-comida").textContent = "Error: " + (data.error || "no se pudo analizar.");
+        return;
+      }
+
+      const c = data.comida;
+      document.getElementById("resultado-comida").style.display = "block";
+      document.getElementById("resultado-comida").innerHTML =
+        `<strong>${c.franja} guardado.</strong> ${Math.round(c.calorias)} kcal · ${Math.round(c.proteinas_g)}g proteína · ${Math.round(c.carbohidratos_g)}g carb · ${Math.round(c.grasas_g)}g grasa`;
+
+      document.getElementById("texto-comida").value = "";
+      document.getElementById("zona-transcripcion").style.display = "none";
+
+      await actualizarResumenYLista();
+
+    } catch(e){
+      document.getElementById("resultado-comida").style.display = "block";
+      document.getElementById("resultado-comida").textContent = "Error de conexión, probá de nuevo.";
+    } finally {
+      boton.disabled = false;
+      boton.textContent = "Analizar y guardar";
+    }
+  }
+
+  iniciar();
+</script>
+
+</body>
+</html>
