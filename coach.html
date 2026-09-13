@@ -233,6 +233,15 @@
   .campo-peso-base label{ font-size:11.5px; color:var(--accent); margin:0; flex:1; }
   .campo-peso-base input{ width:70px; padding:7px 8px; font-size:13px; text-align:center; }
   .campo-peso-base .unidad{ font-size:11px; color:var(--text-dim); }
+
+  .campo-cronometro{
+    margin-top:8px; padding-top:8px; border-top:1px dashed var(--line);
+  }
+  .check-cronometro{
+    display:flex; align-items:center; gap:8px;
+    font-size:12.5px; color:var(--text); cursor:pointer;
+  }
+  .check-cronometro input{ width:auto; }
   .acciones-fila-ej{ display:flex; gap:6px; margin-top:8px; }
   .acciones-fila-ej button{
     flex:1; padding:7px; border-radius:7px; font-size:12px; cursor:pointer;
@@ -382,6 +391,11 @@
       return;
     }
     await cargarListaAlumnos();
+  }
+
+  function toggleCampoCrono(ejercicioId){
+    const checkbox = document.getElementById("campo-usacrono-" + ejercicioId);
+    document.getElementById("campo-duracion-crono-" + ejercicioId).style.display = checkbox.checked ? "block" : "none";
   }
 
   function mostrarDiaEjercicios(alumnoId, diaElegido){
@@ -1016,6 +1030,17 @@
                   <span class="unidad">kg</span>
                 </div>
               ` : ""}
+              <div class="campo-cronometro">
+                <label class="check-cronometro">
+                  <input type="checkbox" id="campo-usacrono-${ej.id}" ${ej.usa_cronometro ? "checked" : ""} onchange="toggleCampoCrono('${ej.id}')">
+                  Usar cronómetro con voz (en vez de series/reps normales)
+                </label>
+                <div id="campo-duracion-crono-${ej.id}" style="${ej.usa_cronometro ? "" : "display:none;"} margin-top:6px;">
+                  <label>Duración de trabajo por ronda (seg)</label>
+                  <input type="text" id="campo-duraciontrabajo-${ej.id}" value="${ej.duracion_trabajo_seg ?? ""}" style="width:80px;">
+                  <div class="sin-historial" style="margin-top:4px;">Usa "Series" como cantidad de rondas y "Descanso" como segundos de pausa entre rondas.</div>
+                </div>
+              </div>
               <div class="acciones-fila-ej">
                 <button class="btn-guardar-fila" onclick="guardarFilaEjercicio('${ej.id}', '${alumnoId}', '${bloque}')">Guardar</button>
                 <button class="btn-borrar-fila" onclick="borrarFilaEjercicio('${ej.id}','${alumnoId}')">Borrar ejercicio</button>
@@ -1088,7 +1113,9 @@
       rir: val("campo-rir-" + ejercicioId),
       descanso_seg: val("campo-descanso-" + ejercicioId),
       peso_kg: pesoFinal,
-      notas: notasFinal
+      notas: notasFinal,
+      usa_cronometro: document.getElementById("campo-usacrono-" + ejercicioId).checked,
+      duracion_trabajo_seg: val("campo-duraciontrabajo-" + ejercicioId)
     }).eq("id", ejercicioId);
 
     boton.disabled = false;

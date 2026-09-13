@@ -166,6 +166,30 @@
     font-style:italic;
   }
 
+  .ejercicio-crono{ flex-direction:column; }
+  .btn-iniciar-crono{
+    width:100%; margin-top:12px; padding:14px;
+    background:var(--accent); color:var(--bg); border:none;
+    border-radius:10px; font-size:15px; font-weight:700; cursor:pointer;
+  }
+  .panel-crono{
+    margin-top:14px; padding:24px 16px; text-align:center;
+    background:#0d0f0d; border:1px solid var(--line); border-radius:12px;
+  }
+  .crono-fase{
+    font-size:15px; text-transform:uppercase; letter-spacing:.1em;
+    color:var(--accent); font-weight:700; margin-bottom:8px;
+  }
+  .crono-numero{
+    font-family:"SF Mono","Menlo","Consolas",monospace;
+    font-size:64px; font-weight:700; line-height:1;
+  }
+  .crono-ronda{ margin-top:8px; color:var(--text-dim); font-size:13px; }
+  .btn-detener-crono{
+    margin-top:16px; background:none; border:1px solid var(--danger);
+    color:var(--danger); border-radius:8px; padding:9px 18px; font-size:13px; cursor:pointer;
+  }
+
   footer{
     text-align:center;
     color:var(--text-dim);
@@ -359,6 +383,39 @@
         panel.insertAdjacentHTML("beforeend", `<div class="bloque-titulo">${bloque}</div>`);
         bloquesDelDia[bloque].forEach(ej => {
           const badge = tipoBadge(ej.tipo);
+
+          if(ej.usa_cronometro){
+            panel.insertAdjacentHTML("beforeend", `
+              <div class="ejercicio ejercicio-crono" id="ej-${ej.id}">
+                <div class="cuerpo" style="width:100%;">
+                  <div class="fila-top">
+                    <div class="nombre">${ej.nombre_ejercicio}</div>
+                    ${badge ? `<div class="badge ${badge}">${badge}</div>` : ""}
+                  </div>
+                  <div class="datos">
+                    <span><span class="num">${ej.series}</span> rondas</span>
+                    <span><span class="num">${ej.duracion_trabajo_seg ?? "-"}</span>s trabajo</span>
+                    <span><span class="num">${ej.descanso_seg ?? "-"}</span>s descanso</span>
+                  </div>
+                  ${ej.notas ? `<div class="notas">${ej.notas}</div>` : ""}
+
+                  <button class="btn-iniciar-crono" id="btn-crono-${ej.id}"
+                    onclick="iniciarCronometro('${ej.id}', ${ej.series}, ${ej.duracion_trabajo_seg}, ${ej.descanso_seg})">
+                    ▶ Iniciar cronómetro
+                  </button>
+
+                  <div class="panel-crono" id="panel-crono-${ej.id}" style="display:none;">
+                    <div class="crono-fase" id="crono-fase-${ej.id}">Atento</div>
+                    <div class="crono-numero" id="crono-numero-${ej.id}">5</div>
+                    <div class="crono-ronda" id="crono-ronda-${ej.id}"></div>
+                    <button class="btn-detener-crono" onclick="detenerCronometro('${ej.id}')">Detener</button>
+                  </div>
+                </div>
+              </div>
+            `);
+            return;
+          }
+
           panel.insertAdjacentHTML("beforeend", `
             <div class="ejercicio" id="ej-${ej.id}">
               <input type="checkbox" class="chk" onchange="toggleHecho('${ej.id}')">
@@ -392,6 +449,101 @@
 
   window.toggleHecho = function(id){
     document.getElementById("ej-" + id).classList.toggle("hecho");
+  };
+
+  // --- Cronometro con voz ---
+  const cronometrosActivos = {};
+
+  function hablar(texto){
+    if(!("speechSynthesis" in window)) return;
+    const u = new SpeechSynthesisUtterance(texto);
+    u.lang = "es-AR";
+    u.rate = 1;
+    window.speechSynthesis.cancel(); // corta cualquier locucion anterior superpuesta
+    window.speechSynthesis.speak(u);
+  }
+
+  function esperar(ms, idEjercicio){
+    return new Promise(resolve => {
+      const t = setTimeout(resolve, ms);
+      cronometrosActivos[idEjercicio].timeouts.push(t);
+    });
+  }
+
+  async function contarRegresiva(idEjercicio, desde, elementoNumero){
+    for(let n = desde; n >= 0; n--){
+      if(!cronometrosActivos[idEjercicio] || !cronometrosActivos[idEjercicio].activo) return false;
+      elementoNumero.textContent = n;
+      hablar(String(n));
+      await esperar(1000, idEjercicio);
+      if(!cronometrosActivos[idEjercicio] || !cronometrosActivos[idEjercicio].activo) return false;
+    }
+    return true;
+  }
+
+  async function correrFaseSilenciosa(idEjercicio, segundos, elementoNumero){
+    for(let n = segundos; n >= 6; n--){
+      if(!cronometrosActivos[idEjercicio] || !cronometrosActivos[idEjercicio].activo) return false;
+      elementoNumero.textContent = n;
+      await esperar(1000, idEjercicio);
+    }
+    return true;
+  }
+
+  window.iniciarCronometro = async function(idEjercicio, rondas, segundosTrabajo, segundosDescanso){
+    const btn = document.getElementById("btn-crono-" + idEjercicio);
+    const panel = document.getElementById("panel-crono-" + idEjercicio);
+    const elFase = document.getElementById("crono-fase-" + idEjercicio);
+    const elNumero = document.getElementById("crono-numero-" + idEjercicio);
+    const elRonda = document.getElementById("crono-ronda-" + idEjercicio);
+
+    btn.style.display = "none";
+    panel.style.display = "block";
+    cronometrosActivos[idEjercicio] = { activo: true, timeouts: [] };
+
+    for(let ronda = 1; ronda <= rondas; ronda++){
+      if(!cronometrosActivos[idEjercicio].activo) break;
+      elRonda.textContent = `Ronda ${ronda} de ${rondas}`;
+
+      elFase.textContent = "Atento";
+      hablar("Atento");
+      await esperar(600, idEjercicio);
+      const sigue1 = await contarRegresiva(idEjercicio, 5, elNumero);
+      if(!sigue1) break;
+
+      elFase.textContent = "Trabajo";
+      hablar("Comenzar");
+      elNumero.textContent = segundosTrabajo;
+      const sigue2 = await correrFaseSilenciosa(idEjercicio, segundosTrabajo, elNumero);
+      if(!sigue2) break;
+      const sigue3 = await contarRegresiva(idEjercicio, 5, elNumero);
+      if(!sigue3) break;
+
+      if(ronda < rondas){
+        elFase.textContent = "Descanso";
+        hablar("Descanso");
+        elNumero.textContent = segundosDescanso;
+        const sigue4 = await correrFaseSilenciosa(idEjercicio, segundosDescanso, elNumero);
+        if(!sigue4) break;
+      }
+    }
+
+    if(cronometrosActivos[idEjercicio] && cronometrosActivos[idEjercicio].activo){
+      elFase.textContent = "Listo";
+      elNumero.textContent = "✓";
+      hablar("Ejercicio terminado");
+    }
+    if(cronometrosActivos[idEjercicio]) cronometrosActivos[idEjercicio].activo = false;
+  };
+
+  window.detenerCronometro = function(idEjercicio){
+    if(cronometrosActivos[idEjercicio]){
+      cronometrosActivos[idEjercicio].activo = false;
+      cronometrosActivos[idEjercicio].timeouts.forEach(t => clearTimeout(t));
+    }
+    window.speechSynthesis.cancel();
+    document.getElementById("panel-crono-" + idEjercicio).style.display = "none";
+    document.getElementById("btn-crono-" + idEjercicio).style.display = "block";
   };
 
   function formatFechaAR(fechaISO){
