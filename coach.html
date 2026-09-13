@@ -374,6 +374,14 @@
     const abrir = botones.style.display !== "flex";
     botones.style.display = abrir ? "flex" : "none";
     flecha.textContent = abrir ? "▴" : "▾";
+
+    if(!abrir){
+      // Al cerrar el nombre, se cierran tambien todos los paneles secundarios abiertos
+      ["edicion-", "medicion-", "nutricion-", "ejercicios-"].forEach(prefijo => {
+        const panel = document.getElementById(prefijo + alumnoId);
+        if(panel) panel.style.display = "none";
+      });
+    }
   }
 
   function toggleFormularioAlta(){
