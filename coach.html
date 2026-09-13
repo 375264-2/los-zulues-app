@@ -966,7 +966,13 @@
     });
 
     const ordenDias = Object.keys(dias).map(Number).sort((a,b)=>a-b);
-    const NOMBRES_SEMANA = ["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado","Domingo"];
+    const PATRONES_DIAS = {
+      3: ["Lunes","Miércoles","Viernes"],
+      4: ["Lunes","Martes","Jueves","Viernes"],
+      5: ["Lunes","Martes","Miércoles","Jueves","Viernes"],
+      6: ["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"]
+    };
+    const NOMBRES_SEMANA = PATRONES_DIAS[ordenDias.length] || ["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado","Domingo"];
 
     let tabsHtml = `<div class="dias-tabs">`;
     ordenDias.forEach((dia, i) => {
