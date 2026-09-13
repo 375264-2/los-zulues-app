@@ -203,7 +203,7 @@
   <div class="meta" id="meta-rutina"></div>
   <div class="fila-accesos">
     <a class="link-comidas" id="link-comidas" href="#">🍽️ Registrar mi alimentación</a>
-    <a class="link-comidas" id="link-evolucion" href="#seccion-evolucion" style="display:none;">📈 Ver mi evolución</a>
+    <a class="link-comidas" id="link-evolucion" href="javascript:void(0)" onclick="toggleEvolucion()" style="display:none;">📈 Ver mi evolución</a>
   </div>
 </header>
 
@@ -403,6 +403,14 @@
   let datosMedicionesAlumno = [];
   let graficoEvolucion = null;
 
+  function toggleEvolucion(){
+    const seccion = document.getElementById("seccion-evolucion");
+    const boton = document.getElementById("link-evolucion");
+    const abrir = seccion.style.display !== "block";
+    seccion.style.display = abrir ? "block" : "none";
+    if(abrir) seccion.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
   async function cargarEvolucion(alumnoId){
     const { data, error } = await sb
       .from("mediciones")
@@ -415,7 +423,6 @@
     }
 
     datosMedicionesAlumno = data;
-    document.getElementById("seccion-evolucion").style.display = "block";
     document.getElementById("link-evolucion").style.display = "inline-block";
     dibujarGraficoEvolucion();
   }
