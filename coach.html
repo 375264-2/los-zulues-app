@@ -272,6 +272,19 @@
   }
   .fila-peso .btn-guardar-peso{ border-color:var(--accent); color:var(--accent); }
   .fila-peso .btn-borrar-peso{ border-color:var(--danger); color:var(--danger); }
+
+  .titulo-bloque-catalogo{
+    font-size:12px; text-transform:uppercase; letter-spacing:.06em;
+    color:var(--text-dim); margin:16px 0 8px;
+  }
+  .titulo-bloque-catalogo:first-child{ margin-top:0; }
+  .fila-catalogo{
+    display:flex; justify-content:space-between; align-items:center; gap:8px;
+    background:#0d0f0d; border:1px solid var(--line); border-radius:9px;
+    padding:9px 10px; margin-bottom:6px;
+  }
+  .fila-catalogo .nombre-catalogo{ font-size:13px; flex:1; }
+  .fila-catalogo .zona-catalogo{ font-size:11px; color:var(--text-dim); }
   .cargando-lista{ color:var(--text-dim); font-size:14px; }
 </style>
 </head>
@@ -348,6 +361,45 @@
       <h2>Alumnos activos</h2>
       <div id="lista-alumnos" class="cargando-lista">Cargando…</div>
     </section>
+
+    <section>
+      <h2 class="h2-clickeable" onclick="toggleCatalogo()">
+        + Catálogo de ejercicios <span id="flecha-catalogo">▾</span>
+      </h2>
+
+      <div id="panel-catalogo" style="display:none; margin-top:16px;">
+        <label>Nombre del ejercicio</label>
+        <input type="text" id="cat-nombre" placeholder="Ej: Press inclinado con barra">
+
+        <label>Bloque</label>
+        <select id="cat-bloque" onchange="onCambioBloqueCatalogo()">
+          <option value="Entrada en Calor">Entrada en Calor</option>
+          <option value="Activacion Neuromuscular">Activación Neuromuscular</option>
+          <option value="Fuerza - Hipertrofia" selected>Fuerza - Hipertrofia</option>
+          <option value="Core">Core</option>
+          <option value="Bloque HIT">Bloque HIT</option>
+        </select>
+
+        <div id="cat-zona-contenedor">
+          <label>Zona del cuerpo</label>
+          <select id="cat-zona">
+            <option value="Superior">Superior</option>
+            <option value="Inferior">Inferior</option>
+            <option value="Ambos">Ambos (cuerpo completo)</option>
+          </select>
+        </div>
+
+        <label>Grupo muscular</label>
+        <input type="text" id="cat-grupo" placeholder="Ej: Pectoral superior">
+
+        <label>Patrón de movimiento / notas (opcional)</label>
+        <input type="text" id="cat-patron" placeholder="Ej: Empuje inclinado">
+
+        <button class="btn-principal" style="margin-top:14px;" onclick="agregarEjercicioCatalogo()">Agregar al catálogo</button>
+
+        <div id="lista-catalogo" class="cargando-lista" style="margin-top:20px;">Cargando…</div>
+      </div>
+    </section>
   </main>
 </div>
 
@@ -423,6 +475,128 @@
         if(panel) panel.style.display = "none";
       });
     }
+  }
+
+  async function toggleCatalogo(){
+    const panel = document.getElementById("panel-catalogo");
+    const flecha = document.getElementById("flecha-catalogo");
+    const abrir = panel.style.display !== "block";
+    panel.style.display = abrir ? "block" : "none";
+    flecha.textContent = abrir ? "▴" : "▾";
+    if(abrir) await cargarListaCatalogo();
+  }
+
+  function onCambioBloqueCatalogo(){
+    const bloque = document.getElementById("cat-bloque").value;
+    const mostrarZona = bloque === "Fuerza - Hipertrofia" || bloque === "Activacion Neuromuscular";
+    document.getElementById("cat-zona-contenedor").style.display = mostrarZona ? "block" : "none";
+  }
+
+  async function agregarEjercicioCatalogo(){
+    const nombre = document.getElementById("cat-nombre").value.trim();
+    const bloque = document.getElementById("cat-bloque").value;
+    const grupo = document.getElementById("cat-grupo").value.trim() || null;
+    const patron = document.getElementById("cat-patron").value.trim() || null;
+
+    if(!nombre){
+      alert("Falta el nombre del ejercicio.");
+      return;
+    }
+
+    let zona;
+    if(bloque === "Fuerza - Hipertrofia" || bloque === "Activacion Neuromuscular"){
+      zona = document.getElementById("cat-zona").value;
+    } else if(bloque === "Core"){
+      zona = "Core";
+    } else {
+      zona = "General";
+    }
+    const tipo = bloque === "Core" ? "CORE" : null;
+
+    const boton = event.target;
+    boton.disabled = true;
+    boton.textContent = "Agregando...";
+
+    const { error } = await sb.from("catalogo_ejercicios").insert({
+      nombre_ejercicio: nombre,
+      bloque: bloque,
+      zona_corporal: zona,
+      tipo: tipo,
+      grupo_muscular: grupo,
+      notas: patron
+    });
+
+    boton.disabled = false;
+    boton.textContent = "Agregar al catálogo";
+
+    if(error){
+      alert("Error agregando el ejercicio: " + error.message);
+      return;
+    }
+
+    document.getElementById("cat-nombre").value = "";
+    document.getElementById("cat-grupo").value = "";
+    document.getElementById("cat-patron").value = "";
+
+    catalogoEjerciciosCache = null; // invalidar cache para que el resto de la app vea el ejercicio nuevo
+    await cargarListaCatalogo();
+  }
+
+  async function cargarListaCatalogo(){
+    const cont = document.getElementById("lista-catalogo");
+    cont.textContent = "Cargando…";
+    cont.className = "cargando-lista";
+
+    const { data, error } = await sb
+      .from("catalogo_ejercicios")
+      .select("id, nombre_ejercicio, bloque, zona_corporal")
+      .order("bloque")
+      .order("nombre_ejercicio");
+
+    if(error || !data){
+      cont.textContent = "No se pudo cargar el catálogo.";
+      return;
+    }
+
+    const porBloque = {};
+    data.forEach(e => {
+      if(!porBloque[e.bloque]) porBloque[e.bloque] = [];
+      porBloque[e.bloque].push(e);
+    });
+
+    const ORDEN = ["Entrada en Calor", "Activacion Neuromuscular", "Fuerza - Hipertrofia", "Core", "Bloque HIT"];
+    const ordenBloques = ORDEN.filter(b => porBloque[b]);
+    Object.keys(porBloque).forEach(b => { if(!ordenBloques.includes(b)) ordenBloques.push(b); });
+
+    cont.className = "";
+    let html = "";
+    ordenBloques.forEach(bloque => {
+      html += `<div class="titulo-bloque-catalogo">${bloque} (${porBloque[bloque].length})</div>`;
+      porBloque[bloque].forEach(e => {
+        html += `
+          <div class="fila-catalogo">
+            <div>
+              <div class="nombre-catalogo">${e.nombre_ejercicio}</div>
+              <div class="zona-catalogo">${e.zona_corporal || ""}</div>
+            </div>
+            <button class="btn-borrar-peso" onclick="borrarEjercicioCatalogo('${e.id}')">Borrar</button>
+          </div>
+        `;
+      });
+    });
+
+    cont.innerHTML = html;
+  }
+
+  async function borrarEjercicioCatalogo(id){
+    if(!confirm("¿Borrar este ejercicio del catálogo? No afecta a rutinas ya generadas.")) return;
+    const { error } = await sb.from("catalogo_ejercicios").delete().eq("id", id);
+    if(error){
+      alert("Error borrando: " + error.message);
+      return;
+    }
+    catalogoEjerciciosCache = null;
+    await cargarListaCatalogo();
   }
 
   function toggleFormularioAlta(){
