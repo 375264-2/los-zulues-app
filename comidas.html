@@ -79,15 +79,27 @@
     font-size:13px; text-transform:uppercase; letter-spacing:.06em;
     color:var(--text-dim); margin:0 0 12px;
   }
-  .tabla-semanal{
-    width:100%; border-collapse:collapse; margin-top:14px; font-size:13px;
+  #tabla-semanal{ margin-top:14px; }
+  .dia-semanal{
+    border-bottom:1px solid var(--line);
   }
-  .tabla-semanal th, .tabla-semanal td{
-    text-align:left; padding:7px 6px; border-bottom:1px solid var(--line);
+  .dia-semanal:last-child{ border-bottom:none; }
+  .dia-semanal-cabecera{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:11px 4px; cursor:pointer;
   }
-  .tabla-semanal th{ color:var(--text-dim); font-weight:600; font-size:11.5px; }
-  .tabla-semanal td.num{ font-family:"SF Mono","Menlo","Consolas",monospace; }
-  .tabla-semanal td.ok{ color:var(--accent); }
+  .dia-semanal-fecha{ font-size:13.5px; font-weight:600; }
+  .dia-semanal-totales{ font-size:12px; color:var(--text-dim); }
+  .dia-semanal-detalle{
+    display:none; padding:0 4px 12px;
+  }
+  .dia-semanal-detalle.abierto{ display:block; }
+  .item-comida-semanal{
+    font-size:12.5px; padding:5px 0; color:var(--text);
+  }
+  .item-comida-semanal .franja-semanal{ color:var(--accent); font-weight:600; }
+  .item-comida-semanal .macros-semanal{ color:var(--text-dim); font-size:11.5px; }
+  .dia-semanal-vacio{ font-size:12.5px; color:var(--text-dim); padding:4px 0; }
 
   .franjas{
     display:grid; grid-template-columns:repeat(5,1fr);
@@ -196,7 +208,7 @@
       <div style="position:relative; height:200px;">
         <canvas id="grafico-semanal"></canvas>
       </div>
-      <table class="tabla-semanal" id="tabla-semanal"></table>
+      <div id="tabla-semanal"></div>
     </div>
 
     <div class="franjas" id="franjas"></div>
@@ -470,7 +482,7 @@
 
     const { data, error } = await sb
       .from("comidas")
-      .select("fecha, calorias, proteinas_g")
+      .select("fecha, franja, texto_transcripto, calorias, proteinas_g")
       .eq("alumno_id", alumnoIdGlobal)
       .gte("fecha", fechaDesde)
       .order("fecha", { ascending:true });
@@ -481,7 +493,7 @@
       const d = new Date();
       d.setDate(hoy.getDate() - i);
       const fechaISO = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
-      dias.push({ fecha: fechaISO, calorias: 0, proteinas: 0 });
+      dias.push({ fecha: fechaISO, calorias: 0, proteinas: 0, comidas: [] });
     }
 
     (data || []).forEach(c => {
@@ -489,6 +501,7 @@
       if(dia){
         dia.calorias += c.calorias || 0;
         dia.proteinas += c.proteinas_g || 0;
+        dia.comidas.push(c);
       }
     });
 
@@ -528,21 +541,31 @@
       }
     });
 
-    // Tabla resumen
+    // Lista por dia, desplegable, con el detalle de cada comida
     const tabla = document.getElementById("tabla-semanal");
-    tabla.innerHTML = `
-      <tr><th>Día</th><th>Kcal</th><th>Proteína</th></tr>
-      ${dias.map(d => {
-        const cumplio = metaProteina && d.proteinas >= metaProteina;
-        return `
-          <tr>
-            <td>${formatFechaCortaAR(d.fecha)}</td>
-            <td class="num">${Math.round(d.calorias)}</td>
-            <td class="num ${cumplio ? "ok" : ""}">${Math.round(d.proteinas)}g${cumplio ? " ✓" : ""}</td>
-          </tr>
-        `;
-      }).join("")}
-    `;
+    tabla.innerHTML = dias.slice().reverse().map((d, idx) => {
+      const cumplio = metaProteina && d.proteinas >= metaProteina;
+      const idDetalle = "detalle-dia-" + idx;
+      return `
+        <div class="dia-semanal">
+          <div class="dia-semanal-cabecera" onclick="document.getElementById('${idDetalle}').classList.toggle('abierto')">
+            <span class="dia-semanal-fecha">${formatFechaCortaAR(d.fecha)}</span>
+            <span class="dia-semanal-totales num">${Math.round(d.calorias)} kcal · ${Math.round(d.proteinas)}g prot${cumplio ? " ✓" : ""}</span>
+          </div>
+          <div class="dia-semanal-detalle" id="${idDetalle}">
+            ${d.comidas.length === 0
+              ? `<div class="dia-semanal-vacio">Sin comidas registradas.</div>`
+              : d.comidas.map(c => `
+                  <div class="item-comida-semanal">
+                    <span class="franja-semanal">${c.franja}:</span> ${c.texto_transcripto}
+                    <span class="macros-semanal">(${Math.round(c.calorias||0)} kcal, ${Math.round(c.proteinas_g||0)}g prot)</span>
+                  </div>
+                `).join("")
+            }
+          </div>
+        </div>
+      `;
+    }).join("");
   }
 
   iniciar();
