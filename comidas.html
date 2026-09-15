@@ -203,7 +203,13 @@
   let metaProteina = 0;
   let metaCalorias = 0;
 
-  function hoyISO(){ return new Date().toISOString().slice(0,10); }
+  function hoyISO(){
+    const d = new Date();
+    const anio = d.getFullYear();
+    const mes = String(d.getMonth() + 1).padStart(2, "0");
+    const dia = String(d.getDate()).padStart(2, "0");
+    return `${anio}-${mes}-${dia}`;
+  }
 
   async function iniciar(){
     const params = new URLSearchParams(window.location.search);
@@ -374,7 +380,7 @@
       const resp = await fetch(URL_FUNCION_ANALIZAR, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ alumno_id: alumnoIdGlobal, franja: franjaActiva, texto })
+        body: JSON.stringify({ alumno_id: alumnoIdGlobal, franja: franjaActiva, texto, fecha: hoyISO() })
       });
       const data = await resp.json();
 
