@@ -1090,7 +1090,7 @@
 
   async function obtenerCatalogo(){
     if(catalogoEjerciciosCache) return catalogoEjerciciosCache;
-    const { data } = await sb.from("catalogo_ejercicios").select("nombre_ejercicio, bloque, zona_corporal").order("nombre_ejercicio");
+    const { data } = await sb.from("catalogo_ejercicios").select("nombre_ejercicio, bloque, zona_corporal, usa_cronometro_default").order("nombre_ejercicio");
     catalogoEjerciciosCache = data || [];
     return catalogoEjerciciosCache;
   }
@@ -1315,6 +1315,10 @@
     const rutina = rutinaPorAlumnoGlobal[alumnoId];
     const rir = rutina ? rutina.rir_objetivo : 4;
 
+    const catalogo = await obtenerCatalogo();
+    const infoCatalogo = catalogo.find(e => e.nombre_ejercicio === nombreEjercicio);
+    const usaCrono = !!(infoCatalogo && infoCatalogo.usa_cronometro_default);
+
     const { data: maxOrdenData } = await sb
       .from("rutina_ejercicios")
       .select("orden")
@@ -1336,7 +1340,9 @@
       reps_min: 10,
       reps_max: 12,
       rir: bloque === "Fuerza - Hipertrofia" ? rir : null,
-      descanso_seg: bloque === "Fuerza - Hipertrofia" ? 90 : 30
+      descanso_seg: bloque === "Fuerza - Hipertrofia" ? 90 : 30,
+      usa_cronometro: usaCrono,
+      duracion_trabajo_seg: usaCrono ? 30 : null
     });
 
     if(error){
