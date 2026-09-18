@@ -380,9 +380,16 @@
     return r;
   }
 
+  function detenerReconocimientoUI(){
+    grabando = false;
+    document.getElementById("boton-mic").classList.remove("grabando");
+    document.getElementById("estado-voz").textContent = "Tocá el micrófono y contame qué comiste";
+  }
+
   function alternarGrabacion(){
     if(grabando){
       if(reconocimiento) reconocimiento.stop();
+      detenerReconocimientoUI();
       return;
     }
 
@@ -397,22 +404,36 @@
       const texto = evento.results[0][0].transcript;
       document.getElementById("texto-comida").value = texto;
       document.getElementById("zona-transcripcion").style.display = "block";
+      // Cerramos el microfono nosotros mismos apenas llega el resultado,
+      // en vez de esperar a que el navegador avise (en iPhone/Safari a veces no avisa).
+      if(reconocimiento) reconocimiento.stop();
+      detenerReconocimientoUI();
     };
 
     reconocimiento.onerror = () => {
       document.getElementById("estado-voz").textContent = "No te escuché bien, tocá el micrófono y probá de nuevo.";
+      detenerReconocimientoUI();
     };
 
     reconocimiento.onend = () => {
-      grabando = false;
-      document.getElementById("boton-mic").classList.remove("grabando");
-      document.getElementById("estado-voz").textContent = "Tocá el micrófono y contame qué comiste";
+      detenerReconocimientoUI();
     };
 
     reconocimiento.start();
+
+    setTimeout(() => {
+      if(grabando && reconocimiento){
+        reconocimiento.stop();
+        detenerReconocimientoUI();
+      }
+    }, 12000);
   }
 
   async function analizarYGuardar(){
+    // Por si quedo algo de una grabacion anterior sin cerrar del todo (Safari/iPhone)
+    if(reconocimiento) reconocimiento.stop();
+    detenerReconocimientoUI();
+
     const texto = document.getElementById("texto-comida").value.trim();
     if(!texto){
       alert("Todavía no hay nada para analizar.");
