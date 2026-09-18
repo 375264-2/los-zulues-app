@@ -811,6 +811,9 @@
             </div>
 
             <div id="historial-${a.id}"></div>
+
+            <div class="titulo-bloque-catalogo" style="margin-top:20px;">Entrenamientos completados</div>
+            <div id="sesiones-${a.id}" class="sin-historial">Cargando…</div>
           </div>
 
           <div class="panel-edicion" id="nutricion-${a.id}">
@@ -957,7 +960,36 @@
     const panel = document.getElementById("medicion-" + alumnoId);
     const abrir = panel.style.display !== "block";
     panel.style.display = abrir ? "block" : "none";
-    if(abrir) cargarHistorialMediciones(alumnoId);
+    if(abrir){
+      cargarHistorialMediciones(alumnoId);
+      cargarSesionesCompletadas(alumnoId);
+    }
+  }
+
+  async function cargarSesionesCompletadas(alumnoId){
+    const cont = document.getElementById("sesiones-" + alumnoId);
+    cont.textContent = "Cargando…";
+
+    const { data, error } = await sb
+      .from("sesiones_completadas")
+      .select("*")
+      .eq("alumno_id", alumnoId)
+      .order("fecha", { ascending:false })
+      .limit(14);
+
+    if(error || !data || data.length === 0){
+      cont.textContent = "Todavía no registró ningún entrenamiento.";
+      return;
+    }
+
+    cont.innerHTML = data.map(s => `
+      <div class="fila-catalogo">
+        <div>
+          <div class="nombre-catalogo">${formatFechaAR(s.fecha)} · ${s.nombre_dia || "Día " + s.dia}</div>
+          <div class="zona-catalogo">${s.duracion_estimada_min ?? "-"} min · ${s.calorias_estimadas ?? "-"} kcal estimadas</div>
+        </div>
+      </div>
+    `).join("");
   }
 
   async function guardarMedicion(alumnoId){
