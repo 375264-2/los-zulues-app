@@ -167,6 +167,18 @@
   }
 
   .ejercicio-crono{ flex-direction:column; }
+
+  .zona-finalizar-dia{ padding:20px 16px 8px; }
+  .btn-finalizar-dia{
+    width:100%; padding:15px; background:var(--accent); color:var(--bg);
+    border:none; border-radius:12px; font-size:15px; font-weight:700; cursor:pointer;
+  }
+  .btn-finalizar-dia:disabled{ opacity:.5; }
+  .resultado-finalizar{
+    margin-top:12px; padding:14px; border-radius:10px; text-align:center;
+    background:rgba(201,226,101,.1); border:1px solid var(--accent);
+    font-size:13.5px; display:none;
+  }
   .btn-iniciar-crono{
     width:100%; margin-top:12px; padding:14px;
     background:var(--accent); color:var(--bg); border:none;
@@ -265,6 +277,9 @@
   const SUPABASE_URL = "https://yrwbhzfbcomwojplrfrb.supabase.co";
   const SUPABASE_KEY = "sb_publishable_2O5mIe_yCnMRdF1ppZIQrg_3aWF1MED";
   const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  let alumnoIdGlobal = null;
+  let pesoAlumnoGlobal = null;
+  let ejerciciosPorDiaGlobal = {};
 
   const ORDEN_BLOQUES = ["Entrada en Calor", "Activacion Neuromuscular", "Fuerza - Hipertrofia", "Core", "Bloque HIT"];
 
@@ -291,7 +306,7 @@
 
     const { data: alumno, error: errAlumno } = await sb
       .from("alumnos")
-      .select("id, nombre")
+      .select("id, nombre, peso")
       .eq("id", alumnoId)
       .single();
 
@@ -300,6 +315,8 @@
       return;
     }
 
+    pesoAlumnoGlobal = alumno.peso || null;
+    alumnoIdGlobal = alumnoId;
     document.getElementById("nombre-alumno").textContent = alumno.nombre;
     cargarEvolucion(alumnoId);
     document.getElementById("link-comidas").href = "comidas.html?id=" + alumnoId;
@@ -375,6 +392,7 @@
         if(!bloquesDelDia[b]) bloquesDelDia[b] = [];
         bloquesDelDia[b].push(e);
       });
+      ejerciciosPorDiaGlobal[dia] = dias[dia];
 
       const ordenBloques = ORDEN_BLOQUES.filter(b => bloquesDelDia[b]);
       Object.keys(bloquesDelDia).forEach(b => { if(!ordenBloques.includes(b)) ordenBloques.push(b); });
@@ -437,6 +455,16 @@
           `);
         });
       });
+
+      const idBotonFinal = "btn-finalizar-dia-" + i;
+      panel.insertAdjacentHTML("beforeend", `
+        <div class="zona-finalizar-dia">
+          <button class="btn-finalizar-dia" id="${idBotonFinal}" onclick="finalizarEntrenamientoDia(${dia}, '${(nombresDias[dia]||"Dia "+dia).replace(/'/g,"\\'")}', ${i})">
+            ✅ Terminé mi entrenamiento
+          </button>
+          <div class="resultado-finalizar" id="resultado-finalizar-${i}"></div>
+        </div>
+      `);
 
       panelesEl.appendChild(panel);
     });
@@ -545,6 +573,83 @@
     document.getElementById("panel-crono-" + idEjercicio).style.display = "none";
     document.getElementById("btn-crono-" + idEjercicio).style.display = "block";
   };
+
+  function hoyISO(){
+    const d = new Date();
+    const anio = d.getFullYear();
+    const mes = String(d.getMonth() + 1).padStart(2, "0");
+    const dia = String(d.getDate()).padStart(2, "0");
+    return `${anio}-${mes}-${dia}`;
+  }
+
+  const MET_POR_BLOQUE = {
+    "Entrada en Calor": 3,
+    "Activacion Neuromuscular": 6,
+    "Fuerza - Hipertrofia": 5,
+    "Core": 3.5,
+    "Bloque HIT": 8
+  };
+
+  function estimarSesion(ejerciciosDelDia, pesoKg){
+    let segundosTotales = 0;
+    let caloriasTotales = 0;
+    const peso = pesoKg || 70; // valor de referencia si el alumno no tiene peso cargado
+
+    ejerciciosDelDia.forEach(ej => {
+      let segundosEjercicio;
+      if(ej.usa_cronometro){
+        const trabajo = ej.duracion_trabajo_seg || 30;
+        const descanso = ej.descanso_seg || 20;
+        segundosEjercicio = (ej.series || 1) * (trabajo + descanso);
+      } else {
+        const repsProm = ((ej.reps_min || 10) + (ej.reps_max || 12)) / 2;
+        const segPorSerie = repsProm * 3; // ~3 segundos por repeticion, estimado
+        const descanso = ej.descanso_seg || 0;
+        segundosEjercicio = (ej.series || 1) * (segPorSerie + descanso);
+      }
+      segundosTotales += segundosEjercicio;
+
+      const met = MET_POR_BLOQUE[ej.bloque] || 5;
+      const horasEjercicio = segundosEjercicio / 3600;
+      caloriasTotales += met * peso * horasEjercicio;
+    });
+
+    return {
+      duracionMin: Math.round(segundosTotales / 60),
+      calorias: Math.round(caloriasTotales)
+    };
+  }
+
+  async function finalizarEntrenamientoDia(dia, nombreDia, indicePanel){
+    const boton = document.getElementById("btn-finalizar-dia-" + indicePanel);
+    boton.disabled = true;
+    boton.textContent = "Guardando...";
+
+    const ejerciciosDelDia = ejerciciosPorDiaGlobal[dia] || [];
+    const { duracionMin, calorias } = estimarSesion(ejerciciosDelDia, pesoAlumnoGlobal);
+
+    const { error } = await sb.from("sesiones_completadas").insert({
+      alumno_id: alumnoIdGlobal,
+      fecha: hoyISO(),
+      dia: dia,
+      nombre_dia: nombreDia,
+      duracion_estimada_min: duracionMin,
+      calorias_estimadas: calorias
+    });
+
+    const resultado = document.getElementById("resultado-finalizar-" + indicePanel);
+    resultado.style.display = "block";
+
+    if(error){
+      resultado.textContent = "No se pudo registrar: " + error.message;
+      boton.disabled = false;
+      boton.textContent = "✅ Terminé mi entrenamiento";
+      return;
+    }
+
+    resultado.innerHTML = `¡Entrenamiento registrado! Estimamos <strong>${duracionMin} minutos</strong> y <strong>~${calorias} kcal</strong> quemadas.${pesoAlumnoGlobal ? "" : " <br>(Cargá tu peso con tu coach para una estimación más precisa.)"}`;
+    boton.textContent = "✓ Entrenamiento registrado";
+  }
 
   function formatFechaAR(fechaISO){
     if(!fechaISO) return "-";
