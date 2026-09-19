@@ -342,10 +342,16 @@
             </select>
           </div>
           <div>
-            <label>Nombre de la rutina</label>
-            <input type="text" id="f-nombre-rutina" value="Rutina - Semana 1">
+            <label>Lugar de entrenamiento</label>
+            <select id="f-lugar">
+              <option value="Gimnasio">Gimnasio</option>
+              <option value="Casa">Casa</option>
+            </select>
           </div>
         </div>
+
+        <label>Nombre de la rutina</label>
+        <input type="text" id="f-nombre-rutina" value="Rutina - Semana 1">
 
         <button class="btn-principal" style="margin-top:18px;" onclick="crearAlumno()">Crear alumno y generar rutina</button>
 
@@ -637,6 +643,7 @@
     const sexo = document.getElementById("f-sexo").value;
     const perfil = document.getElementById("f-perfil").value;
     const dias = parseInt(document.getElementById("f-dias").value, 10);
+    const lugar = document.getElementById("f-lugar").value;
     const nombreRutina = document.getElementById("f-nombre-rutina").value.trim() || "Rutina - Semana 1";
 
     if(!nombre){
@@ -656,6 +663,10 @@
       p_perfil_biologico: perfil,
       p_dias: dias
     });
+
+    if(!error && data && data[0]){
+      await sb.from("alumnos").update({ lugar_entrenamiento: lugar }).eq("id", data[0].alumno_id);
+    }
 
     boton.disabled = false;
     boton.textContent = "Crear alumno y generar rutina";
