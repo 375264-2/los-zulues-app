@@ -417,6 +417,17 @@
   const CLAVE_COACH = "Area51";
   const BASE_URL = window.location.origin + window.location.pathname.replace("coach.html", "alumno.html");
 
+  async function guardarLugarEntrenamiento(alumnoId){
+    const lugar = document.getElementById("edit-lugar-" + alumnoId).value;
+    const { error } = await sb.from("alumnos").update({ lugar_entrenamiento: lugar }).eq("id", alumnoId);
+    if(error){
+      alert("Error guardando: " + error.message);
+      return;
+    }
+    if(alumnosPorIdGlobal[alumnoId]) alumnosPorIdGlobal[alumnoId].lugar_entrenamiento = lugar;
+    alert("Guardado. Los ejercicios que se ofrezcan de acá en más van a ser de " + lugar.toLowerCase() + ".");
+  }
+
   async function guardarNombreAlumno(alumnoId){
     const nuevoNombre = document.getElementById("edit-nombre-alumno-" + alumnoId).value.trim();
     if(!nuevoNombre){
@@ -681,7 +692,7 @@
 
     const { data: alumnos, error } = await sb
       .from("alumnos")
-      .select("id, nombre, sexo, peso, altura, edad, objetivo, nivel_actividad")
+      .select("id, nombre, sexo, peso, altura, edad, objetivo, nivel_actividad, lugar_entrenamiento")
       .order("nombre", { ascending:true });
 
     if(error || !alumnos){
@@ -702,6 +713,9 @@
     const rutinaPorAlumno = {};
     (rutinas || []).forEach(r => { rutinaPorAlumno[r.alumno_id] = r; });
     rutinaPorAlumnoGlobal = rutinaPorAlumno;
+
+    alumnosPorIdGlobal = {};
+    alumnos.forEach(a => { alumnosPorIdGlobal[a.id] = a; });
 
     cont.className = "";
     cont.innerHTML = "";
@@ -738,6 +752,16 @@
               <input type="text" id="edit-nombre-alumno-${a.id}" value="${a.nombre}" style="flex:1;">
               <button style="flex:0 0 auto; background:none; border:1px solid var(--accent); color:var(--accent); border-radius:8px; padding:0 14px; font-size:13px; cursor:pointer;" onclick="guardarNombreAlumno('${a.id}')">Guardar nombre</button>
             </div>
+
+            <label style="margin-top:18px;">Lugar de entrenamiento</label>
+            <div style="display:flex; gap:6px;">
+              <select id="edit-lugar-${a.id}" style="flex:1;">
+                <option value="Gimnasio" ${(!a.lugar_entrenamiento || a.lugar_entrenamiento==="Gimnasio")?"selected":""}>Gimnasio</option>
+                <option value="Casa" ${a.lugar_entrenamiento==="Casa"?"selected":""}>Casa</option>
+              </select>
+              <button style="flex:0 0 auto; background:none; border:1px solid var(--accent); color:var(--accent); border-radius:8px; padding:0 14px; font-size:13px; cursor:pointer;" onclick="guardarLugarEntrenamiento('${a.id}')">Guardar</button>
+            </div>
+            <div class="sin-historial" style="margin-top:4px;">Define qué ejercicios se ofrecen al agregarlos en "Ejercicios" (los de gimnasio no se mezclan con los de casa).</div>
 
             <label style="margin-top:18px;">Nombre de la rutina</label>
             <input type="text" id="edit-nombre-${a.id}" value="${nombreRutinaSugerido}">
@@ -1121,20 +1145,29 @@
 
   // --- Editor de ejercicios por alumno ---
   let rutinaPorAlumnoGlobal = {};
+  let alumnosPorIdGlobal = {};
   let catalogoEjerciciosCache = null;
   const ORDEN_BLOQUES_EDITOR = ["Entrada en Calor", "Activacion Neuromuscular", "Fuerza - Hipertrofia", "Core", "Bloque HIT"];
 
   async function obtenerCatalogo(){
     if(catalogoEjerciciosCache) return catalogoEjerciciosCache;
-    const { data } = await sb.from("catalogo_ejercicios").select("nombre_ejercicio, bloque, zona_corporal, usa_cronometro_default").order("nombre_ejercicio");
+    const { data } = await sb.from("catalogo_ejercicios").select("nombre_ejercicio, bloque, zona_corporal, usa_cronometro_default, ubicacion").order("nombre_ejercicio");
     catalogoEjerciciosCache = data || [];
     return catalogoEjerciciosCache;
   }
 
-  function opcionesCatalogoPorBloque(catalogo, bloque, seleccionado){
-    const filtrados = bloque === "Core"
+  function opcionesCatalogoPorBloque(catalogo, bloque, seleccionado, lugar){
+    let filtrados = bloque === "Core"
       ? catalogo.filter(e => e.zona_corporal === "Core")
       : catalogo.filter(e => e.bloque === bloque);
+
+    if(lugar){
+      filtrados = filtrados.filter(e =>
+        e.nombre_ejercicio === seleccionado || // el ejercicio ya asignado siempre queda visible, aunque no matchee el lugar
+        !e.ubicacion || e.ubicacion === "Ambos" || e.ubicacion === lugar
+      );
+    }
+
     return filtrados
       .map(e => `<option value="${e.nombre_ejercicio}" ${e.nombre_ejercicio===seleccionado?"selected":""}>${e.nombre_ejercicio}</option>`)
       .join("");
@@ -1158,6 +1191,7 @@
 
     panel.innerHTML = `<div class="sin-historial">Cargando ejercicios…</div>`;
     const catalogo = await obtenerCatalogo();
+    const lugarAlumno = (alumnosPorIdGlobal[alumnoId] && alumnosPorIdGlobal[alumnoId].lugar_entrenamiento) || "Gimnasio";
 
     const { data: cargasBase } = await sb
       .from("cargas_base")
@@ -1222,7 +1256,7 @@
           html += `
             <div class="fila-ejercicio-editor" id="fila-${ej.id}">
               <select id="campo-nombre-${ej.id}">
-                ${opcionesCatalogoPorBloque(catalogo, bloque, ej.nombre_ejercicio)}
+                ${opcionesCatalogoPorBloque(catalogo, bloque, ej.nombre_ejercicio, lugarAlumno)}
               </select>
               <div class="grid-campos-ej">
                 <div><label>Series</label><input type="text" id="campo-series-${ej.id}" value="${ej.series ?? ""}"></div>
@@ -1262,7 +1296,7 @@
         const idSelectAgregar = `agregar-${dia}-${bloque.replace(/\s+/g,"_")}-${alumnoId}`;
         html += `
           <div class="agregar-ejercicio">
-            <select id="${idSelectAgregar}">${opcionesCatalogoPorBloque(catalogo, bloque)}</select>
+            <select id="${idSelectAgregar}">${opcionesCatalogoPorBloque(catalogo, bloque, null, lugarAlumno)}</select>
             <button onclick="agregarFilaEjercicio('${rutina.id}', ${dia}, '${(nombresDias[dia]||"Dia "+dia).replace(/'/g,"\\'")}', '${bloque}', '${idSelectAgregar}', '${alumnoId}')">+ Agregar</button>
           </div>
         `;
