@@ -6,25 +6,26 @@
 <title>Mi rutina — LOS ZULUES TRIBU FITNESS</title>
 <style>
   :root{
-    --bg: #100f0d;
-    --bg-card: #202318;
-    --line: #272a24;
-    --text: #eef0ea;
-    --text-dim: #8d948a;
-    --accent: #c9e265;
-    --ember: #e8934a;
-    --multi: #c9e265;
-    --mono: #6ea8c9;
-    --core: #d98f5e;
-    --danger: #e2665a;
+    --bg: #e8eadf;
+    --bg-card: #ffffff;
+    --line: #d6d9c9;
+    --text: #1a1d15;
+    --text-dim: #6d7262;
+    --accent-vivid: #c9e265;
+    --accent: #5f7d24;
+    --ember: #b8631f;
+    --multi: #5f7d24;
+    --mono: #386a87;
+    --core: #a85f2b;
+    --danger: #b83526;
   }
   *{box-sizing:border-box;}
   html{scroll-behavior:smooth;}
   html,body{margin:0;padding:0;}
   body{
     background:
-      radial-gradient(ellipse 900px 500px at 15% -10%, rgba(232,147,74,.10), transparent 60%),
-      radial-gradient(ellipse 700px 400px at 100% 0%, rgba(201,226,101,.07), transparent 55%),
+      radial-gradient(ellipse 900px 500px at 15% -10%, rgba(184,99,31,.08), transparent 60%),
+      radial-gradient(ellipse 700px 400px at 100% 0%, rgba(95,125,36,.07), transparent 55%),
       var(--bg);
     color:var(--text);
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
@@ -36,8 +37,8 @@
     content:"";
     position:fixed; inset:0;
     pointer-events:none;
-    opacity:.05;
-    mix-blend-mode:overlay;
+    opacity:.035;
+    mix-blend-mode:multiply;
     background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
     z-index:1;
   }
@@ -49,7 +50,7 @@
     padding:22px 20px 16px;
     border-bottom:1px solid var(--line);
     position:sticky; top:0;
-    background:rgba(16,15,13,0.92);
+    background:rgba(232,234,223,0.92);
     backdrop-filter:blur(6px);
     z-index:10;
   }
@@ -107,9 +108,9 @@
     user-select:none;
   }
   .tab-input:checked + .tab-label{
-    color:var(--bg);
-    background:var(--accent);
-    border-color:var(--accent);
+    color:var(--text);
+    background:var(--accent-vivid);
+    border-color:var(--accent-vivid);
     font-weight:600;
   }
 
@@ -146,8 +147,8 @@
     cursor:pointer;
   }
   .ejercicio .chk:checked{
-    background:var(--accent);
-    border-color:var(--accent);
+    background:var(--accent-vivid);
+    border-color:var(--accent-vivid);
   }
   .ejercicio.hecho{ opacity:.45; }
   .ejercicio.hecho .nombre{ text-decoration:line-through; }
@@ -185,7 +186,7 @@
 
   .zona-finalizar-dia{ padding:20px 16px 8px; }
   .btn-finalizar-dia{
-    width:100%; padding:15px; background:var(--accent); color:var(--bg);
+    width:100%; padding:15px; background:var(--accent-vivid); color:var(--text);
     border:none; border-radius:12px; font-size:15px; font-weight:700; cursor:pointer;
   }
   .btn-finalizar-dia:disabled{ opacity:.5; }
@@ -196,25 +197,27 @@
   }
   .btn-iniciar-crono{
     width:100%; margin-top:12px; padding:14px;
-    background:var(--accent); color:var(--bg); border:none;
+    background:var(--accent-vivid); color:var(--text); border:none;
     border-radius:10px; font-size:15px; font-weight:700; cursor:pointer;
   }
   .panel-crono{
     margin-top:14px; padding:24px 16px; text-align:center;
-    background:#0d0f0d; border:1px solid var(--line); border-radius:12px;
+    background:#171916; border:1px solid #2a2d24; border-radius:12px;
+    color:#eef0ea;
   }
   .crono-fase{
     font-size:15px; text-transform:uppercase; letter-spacing:.1em;
-    color:var(--accent); font-weight:700; margin-bottom:8px;
+    color:var(--accent-vivid); font-weight:700; margin-bottom:8px;
   }
   .crono-numero{
     font-family:"SF Mono","Menlo","Consolas",monospace;
     font-size:64px; font-weight:700; line-height:1;
+    color:#eef0ea;
   }
-  .crono-ronda{ margin-top:8px; color:var(--text-dim); font-size:13px; }
+  .crono-ronda{ margin-top:8px; color:#9aa08f; font-size:13px; }
   .btn-detener-crono{
-    margin-top:16px; background:none; border:1px solid var(--danger);
-    color:var(--danger); border-radius:8px; padding:9px 18px; font-size:13px; cursor:pointer;
+    margin-top:16px; background:none; border:1px solid #e2665a;
+    color:#e2665a; border-radius:8px; padding:9px 18px; font-size:13px; cursor:pointer;
   }
 
   footer{
@@ -714,9 +717,9 @@
         labels,
         datasets: [{
           data: valores,
-          borderColor: "#c9e265",
-          backgroundColor: "rgba(201,226,101,.15)",
-          pointBackgroundColor: "#c9e265",
+          borderColor: "#5f7d24",
+          backgroundColor: "rgba(95,125,36,.12)",
+          pointBackgroundColor: "#5f7d24",
           tension: 0.25,
           fill: true,
           spanGaps: true
@@ -727,8 +730,8 @@
         maintainAspectRatio: false,
         plugins: { legend: { display: false } },
         scales: {
-          x: { ticks: { color: "#8d948a" }, grid: { color: "#262a26" } },
-          y: { ticks: { color: "#8d948a" }, grid: { color: "#262a26" } }
+          x: { ticks: { color: "#6d7262" }, grid: { color: "#d6d9c9" } },
+          y: { ticks: { color: "#6d7262" }, grid: { color: "#d6d9c9" } }
         }
       }
     });
