@@ -214,8 +214,16 @@
   }
   .fila-ejercicio-editor{
     background:#0d0f0d; border:1px solid var(--line); border-radius:10px;
-    padding:10px; margin-bottom:8px;
+    padding:0; margin-bottom:8px; overflow:hidden;
   }
+  .resumen-ejercicio{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:11px 12px; cursor:pointer;
+  }
+  .nombre-resumen{ font-size:13.5px; font-weight:600; }
+  .datos-resumen{ font-size:11.5px; color:var(--text-dim); margin-top:2px; }
+  .flecha-resumen{ color:var(--text-dim); font-size:13px; flex:0 0 auto; margin-left:8px; }
+  .detalle-ejercicio{ padding:0 10px 10px; }
   .fila-ejercicio-editor select{ margin-bottom:6px; }
   .grid-campos-ej{
     display:grid; grid-template-columns:repeat(2,1fr); gap:6px; margin:6px 0;
@@ -460,6 +468,14 @@
       return;
     }
     await cargarListaAlumnos();
+  }
+
+  function toggleDetalleEjercicio(ejercicioId){
+    const detalle = document.getElementById("detalle-ej-" + ejercicioId);
+    const flecha = document.getElementById("flecha-ej-" + ejercicioId);
+    const abrir = detalle.style.display !== "block";
+    detalle.style.display = abrir ? "block" : "none";
+    flecha.textContent = abrir ? "▴" : "▾";
   }
 
   function toggleCampoCrono(ejercicioId){
@@ -1264,43 +1280,54 @@
       ordenBloques.forEach(bloque => {
         html += `<div class="bloque-editor-titulo">${bloque}</div>`;
         (bloques[bloque] || []).forEach(ej => {
+          const resumen = ej.usa_cronometro
+            ? `Cronómetro · ${ej.series ?? "-"} rondas`
+            : `${ej.series ?? "-"}x${ej.reps_min ?? "-"}-${ej.reps_max ?? "-"} · RIR ${ej.rir ?? "-"}`;
           html += `
             <div class="fila-ejercicio-editor" id="fila-${ej.id}">
-              <select id="campo-nombre-${ej.id}">
-                ${opcionesCatalogoPorBloque(catalogo, bloque, ej.nombre_ejercicio, lugarAlumno)}
-              </select>
-              <div class="grid-campos-ej">
-                <div><label>Series</label><input type="text" id="campo-series-${ej.id}" value="${ej.series ?? ""}"></div>
-                <div><label>Reps min</label><input type="text" id="campo-repsmin-${ej.id}" value="${ej.reps_min ?? ""}"></div>
-                <div><label>Reps max</label><input type="text" id="campo-repsmax-${ej.id}" value="${ej.reps_max ?? ""}"></div>
-                <div><label>RIR</label><input type="text" id="campo-rir-${ej.id}" value="${ej.rir ?? ""}"></div>
-                <div><label>Descanso (s)</label><input type="text" id="campo-descanso-${ej.id}" value="${ej.descanso_seg ?? ""}"></div>
-                <div><label>Peso (kg)</label><input type="text" id="campo-peso-${ej.id}" value="${ej.peso_kg ?? ""}"></div>
-              </div>
-              <input type="text" class="notas-ej" id="campo-notas-${ej.id}" placeholder="Notas" value="${ej.notas ?? ""}">
-              ${bloque === "Fuerza - Hipertrofia" ? `
-                <div class="campo-peso-base">
-                  <label>Peso base a RIR 1</label>
-                  <input type="text" id="campo-pesobase-${ej.id}" value="${pesoBasePorEjercicio[ej.nombre_ejercicio] ?? ""}">
-                  <span class="unidad">kg</span>
+              <div class="resumen-ejercicio" onclick="toggleDetalleEjercicio('${ej.id}')">
+                <div>
+                  <div class="nombre-resumen">${ej.nombre_ejercicio}</div>
+                  <div class="datos-resumen">${resumen}</div>
                 </div>
-              ` : ""}
-              <div class="campo-cronometro">
-                <label class="check-cronometro">
-                  <input type="checkbox" id="campo-usacrono-${ej.id}" ${ej.usa_cronometro ? "checked" : ""} onchange="toggleCampoCrono('${ej.id}')">
-                  Usar cronómetro con voz (en vez de series/reps normales)
-                </label>
-                <div id="campo-duracion-crono-${ej.id}" style="${ej.usa_cronometro ? "" : "display:none;"} margin-top:6px;">
-                  <label>Duración de trabajo por ronda (seg)</label>
-                  <input type="text" id="campo-duraciontrabajo-${ej.id}" value="${ej.duracion_trabajo_seg ?? ""}" style="width:80px;">
-                  <div class="sin-historial" style="margin-top:4px;">Usa "Series" como cantidad de rondas y "Descanso" como segundos de pausa entre rondas.</div>
+                <span class="flecha-resumen" id="flecha-ej-${ej.id}">▾</span>
+              </div>
+              <div class="detalle-ejercicio" id="detalle-ej-${ej.id}" style="display:none;">
+                <select id="campo-nombre-${ej.id}">
+                  ${opcionesCatalogoPorBloque(catalogo, bloque, ej.nombre_ejercicio, lugarAlumno)}
+                </select>
+                <div class="grid-campos-ej">
+                  <div><label>Series</label><input type="text" id="campo-series-${ej.id}" value="${ej.series ?? ""}"></div>
+                  <div><label>Reps min</label><input type="text" id="campo-repsmin-${ej.id}" value="${ej.reps_min ?? ""}"></div>
+                  <div><label>Reps max</label><input type="text" id="campo-repsmax-${ej.id}" value="${ej.reps_max ?? ""}"></div>
+                  <div><label>RIR</label><input type="text" id="campo-rir-${ej.id}" value="${ej.rir ?? ""}"></div>
+                  <div><label>Descanso (s)</label><input type="text" id="campo-descanso-${ej.id}" value="${ej.descanso_seg ?? ""}"></div>
+                  <div><label>Peso (kg)</label><input type="text" id="campo-peso-${ej.id}" value="${ej.peso_kg ?? ""}"></div>
                 </div>
-              </div>
-              <div class="acciones-fila-ej">
-                <button class="btn-guardar-fila" onclick="guardarFilaEjercicio('${ej.id}', '${alumnoId}', '${bloque}')">Guardar</button>
-                <button class="btn-borrar-fila" onclick="borrarFilaEjercicio('${ej.id}','${alumnoId}')">Borrar ejercicio</button>
-              </div>
-            </div>
+                <input type="text" class="notas-ej" id="campo-notas-${ej.id}" placeholder="Notas" value="${ej.notas ?? ""}">
+                ${bloque === "Fuerza - Hipertrofia" ? `
+                  <div class="campo-peso-base">
+                    <label>Peso base a RIR 1</label>
+                    <input type="text" id="campo-pesobase-${ej.id}" value="${pesoBasePorEjercicio[ej.nombre_ejercicio] ?? ""}">
+                    <span class="unidad">kg</span>
+                  </div>
+                ` : ""}
+                <div class="campo-cronometro">
+                  <label class="check-cronometro">
+                    <input type="checkbox" id="campo-usacrono-${ej.id}" ${ej.usa_cronometro ? "checked" : ""} onchange="toggleCampoCrono('${ej.id}')">
+                    Usar cronómetro con voz (en vez de series/reps normales)
+                  </label>
+                  <div id="campo-duracion-crono-${ej.id}" style="${ej.usa_cronometro ? "" : "display:none;"} margin-top:6px;">
+                    <label>Duración de trabajo por ronda (seg)</label>
+                    <input type="text" id="campo-duraciontrabajo-${ej.id}" value="${ej.duracion_trabajo_seg ?? ""}" style="width:80px;">
+                    <div class="sin-historial" style="margin-top:4px;">Usa "Series" como cantidad de rondas y "Descanso" como segundos de pausa entre rondas.</div>
+                  </div>
+                </div>
+                <div class="acciones-fila-ej">
+                  <button class="btn-guardar-fila" onclick="guardarFilaEjercicio('${ej.id}', '${alumnoId}', '${bloque}')">Guardar</button>
+                  <button class="btn-borrar-fila" onclick="borrarFilaEjercicio('${ej.id}','${alumnoId}')">Borrar ejercicio</button>
+                </div>
+              </div>            </div>
           `;
         });
 
@@ -1379,6 +1406,17 @@
 
     if(error) alert("Error guardando el ejercicio: " + error.message);
     if(errorPeso) alert("Error guardando el peso base: " + errorPeso.message);
+
+    if(!error){
+      const usaCrono = document.getElementById("campo-usacrono-" + ejercicioId).checked;
+      const series = val("campo-series-" + ejercicioId);
+      const resumenTexto = usaCrono
+        ? `Cronómetro · ${series ?? "-"} rondas`
+        : `${series ?? "-"}x${val("campo-repsmin-" + ejercicioId) ?? "-"}-${val("campo-repsmax-" + ejercicioId) ?? "-"} · RIR ${val("campo-rir-" + ejercicioId) ?? "-"}`;
+      const fila = document.getElementById("fila-" + ejercicioId);
+      fila.querySelector(".nombre-resumen").textContent = nombreEjercicio;
+      fila.querySelector(".datos-resumen").textContent = resumenTexto;
+    }
   }
 
   async function borrarFilaEjercicio(ejercicioId, alumnoId){
