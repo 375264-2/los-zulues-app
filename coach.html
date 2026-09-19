@@ -494,19 +494,37 @@
     document.getElementById(`tab-dia-${alumnoId}-${diaElegido}`).classList.add("activo");
   }
 
+  let alumnoAbiertoActualmente = null;
+
+  function cerrarAlumno(alumnoId){
+    const botones = document.getElementById("botones-" + alumnoId);
+    const flecha = document.getElementById("flecha-alumno-" + alumnoId);
+    if(!botones) return;
+    botones.style.display = "none";
+    if(flecha) flecha.textContent = "▾";
+    ["edicion-", "medicion-", "nutricion-", "ejercicios-"].forEach(prefijo => {
+      const panel = document.getElementById(prefijo + alumnoId);
+      if(panel) panel.style.display = "none";
+    });
+  }
+
   function toggleBotonesAlumno(alumnoId){
     const botones = document.getElementById("botones-" + alumnoId);
     const flecha = document.getElementById("flecha-alumno-" + alumnoId);
     const abrir = botones.style.display !== "flex";
-    botones.style.display = abrir ? "flex" : "none";
-    flecha.textContent = abrir ? "▴" : "▾";
 
-    if(!abrir){
-      // Al cerrar el nombre, se cierran tambien todos los paneles secundarios abiertos
-      ["edicion-", "medicion-", "nutricion-", "ejercicios-"].forEach(prefijo => {
-        const panel = document.getElementById(prefijo + alumnoId);
-        if(panel) panel.style.display = "none";
-      });
+    // Acordeon: si hay otro alumno abierto, se cierra antes de abrir este
+    if(alumnoAbiertoActualmente && alumnoAbiertoActualmente !== alumnoId){
+      cerrarAlumno(alumnoAbiertoActualmente);
+    }
+
+    if(abrir){
+      botones.style.display = "flex";
+      flecha.textContent = "▴";
+      alumnoAbiertoActualmente = alumnoId;
+    } else {
+      cerrarAlumno(alumnoId);
+      alumnoAbiertoActualmente = null;
     }
   }
 
