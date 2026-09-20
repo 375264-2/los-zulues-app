@@ -6,23 +6,38 @@
 <title>Mi alimentación — LOS ZULUES TRIBU FITNESS</title>
 <style>
   :root{
-    --bg: #0d0f0d;
-    --bg-card: #161916;
-    --line: #262a26;
-    --text: #eef0ea;
-    --text-dim: #8d948a;
-    --accent: #c9e265;
-    --danger: #e2665a;
-    --ok: #6ea8c9;
+    --bg: #e8eadf;
+    --bg-card: #f2f3e9;
+    --bg-input: #ffffff;
+    --line: #d6d9c9;
+    --text: #1a1d15;
+    --text-dim: #6d7262;
+    --accent-vivid: #c9e265;
+    --accent: #5f7d24;
+    --danger: #b83526;
+    --ok: #386a87;
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
   body{
-    background:var(--bg);
+    background:
+      radial-gradient(ellipse 900px 500px at 15% -10%, rgba(184,99,31,.08), transparent 60%),
+      radial-gradient(ellipse 700px 400px at 100% 0%, rgba(95,125,36,.07), transparent 55%),
+      var(--bg);
     color:var(--text);
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
     min-height:100vh;
     padding-bottom:50px;
+    position:relative;
+  }
+  body::before{
+    content:"";
+    position:fixed; inset:0;
+    pointer-events:none;
+    opacity:.035;
+    mix-blend-mode:multiply;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    z-index:1;
   }
   .num{ font-family:"SF Mono","Menlo","Consolas",monospace; }
 
@@ -30,7 +45,7 @@
     padding:22px 20px 16px;
     border-bottom:1px solid var(--line);
     position:sticky; top:0;
-    background:rgba(13,15,13,0.94);
+    background:rgba(232,234,223,0.92);
     backdrop-filter:blur(6px);
     z-index:10;
   }
@@ -53,17 +68,17 @@
   .resumen .etiqueta{ font-size:13px; color:var(--text-dim); }
   .resumen .valor{ font-size:15px; font-weight:700; }
   .barra-fondo{
-    background:#0d0f0d; border:1px solid var(--line);
+    background:var(--bg-input); border:1px solid var(--line);
     border-radius:8px; height:10px; overflow:hidden; margin-top:4px;
   }
-  .barra-relleno{ background:var(--accent); height:100%; border-radius:8px; transition:width .3s; }
+  .barra-relleno{ background:var(--accent-vivid); height:100%; border-radius:8px; transition:width .3s; }
   .mensaje-falta{
     margin-top:14px; padding:12px; border-radius:10px;
     background:rgba(201,226,101,.1); border:1px solid var(--accent);
     font-size:13.5px; text-align:center;
   }
   .mensaje-falta.completo{
-    background:rgba(110,168,201,.12); border-color:var(--ok);
+    background:rgba(56,106,135,.1); border-color:var(--ok);
   }
 
   .link-resumen-semanal{
@@ -109,7 +124,7 @@
     background:var(--bg-card); border:1px solid var(--line); color:var(--text-dim);
     border-radius:9px; padding:9px 4px; font-size:11px; text-align:center; cursor:pointer;
   }
-  .franja-btn.activa{ background:var(--accent); color:var(--bg); border-color:var(--accent); font-weight:700; }
+  .franja-btn.activa{ background:var(--accent-vivid); color:var(--text); border-color:var(--accent-vivid); font-weight:700; }
 
   .zona-voz{
     background:var(--bg-card); border:1px solid var(--line); border-radius:14px;
@@ -117,12 +132,12 @@
   }
   .boton-mic{
     width:72px; height:72px; border-radius:50%;
-    background:var(--accent); border:none; cursor:pointer;
+    background:var(--accent-vivid); border:none; cursor:pointer;
     font-size:28px; display:flex; align-items:center; justify-content:center;
     margin:0 auto;
   }
   .boton-mic.grabando{ background:var(--danger); animation:pulso 1.2s infinite; }
-  @keyframes pulso{ 0%{box-shadow:0 0 0 0 rgba(226,102,90,.5);} 100%{box-shadow:0 0 0 16px rgba(226,102,90,0);} }
+  @keyframes pulso{ 0%{box-shadow:0 0 0 0 rgba(184,53,38,.5);} 100%{box-shadow:0 0 0 16px rgba(184,53,38,0);} }
   .estado-voz{ margin-top:10px; font-size:13px; color:var(--text-dim); }
 
   .transcripcion{
@@ -131,11 +146,11 @@
   }
   .transcripcion textarea{
     width:100%; min-height:70px;
-    background:#0d0f0d; border:1px solid var(--line); color:var(--text);
+    background:var(--bg-input); border:1px solid var(--line); color:var(--text);
     border-radius:10px; padding:12px; font-size:15px; resize:vertical;
   }
   .transcripcion .btn-principal{
-    width:100%; background:var(--accent); color:var(--bg); border:none;
+    width:100%; background:var(--accent-vivid); color:var(--text); border:none;
     padding:13px; border-radius:10px; font-weight:700; font-size:14px;
     margin-top:10px; cursor:pointer;
   }
@@ -168,7 +183,7 @@
   .sin-comidas{ color:var(--text-dim); font-size:13.5px; }
 
   .aviso-navegador{
-    background:rgba(226,102,90,.1); border:1px solid var(--danger);
+    background:rgba(184,53,38,.08); border:1px solid var(--danger);
     color:var(--text); border-radius:10px; padding:12px 14px; font-size:13px;
     margin-top:12px; display:none;
   }
@@ -544,7 +559,7 @@
             label: "Meta",
             data: dias.map(() => metaProteina),
             type: "line",
-            borderColor: "#6ea8c9",
+            borderColor: "#386a87",
             borderDash: [5,5],
             pointRadius: 0,
             fill: false
@@ -554,10 +569,10 @@
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { legend: { display: true, labels: { color: "#8d948a", font: { size: 11 } } } },
+        plugins: { legend: { display: true, labels: { color: "#6d7262", font: { size: 11 } } } },
         scales: {
-          x: { ticks: { color: "#8d948a" }, grid: { display:false } },
-          y: { ticks: { color: "#8d948a" }, grid: { color: "#262a26" } }
+          x: { ticks: { color: "#6d7262" }, grid: { display:false } },
+          y: { ticks: { color: "#6d7262" }, grid: { color: "#d6d9c9" } }
         }
       }
     });
