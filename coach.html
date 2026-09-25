@@ -227,6 +227,22 @@
     font-size:11px; text-transform:uppercase; letter-spacing:.06em;
     color:var(--text-dim); margin:10px 0 6px;
   }
+  .bloques-label{
+    margin:14px 0 8px;
+    font-size:12px; text-transform:uppercase; letter-spacing:.06em;
+    color:var(--text-dim); font-weight:700;
+  }
+  .bloque-acordeon{
+    border:1px solid var(--line); border-radius:10px;
+    margin-bottom:8px; overflow:hidden;
+  }
+  .bloque-acordeon-header{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:12px 14px; cursor:pointer; font-weight:700; font-size:14px;
+    background:var(--bg-card);
+  }
+  .bloque-acordeon-header .flecha-resumen{ color:var(--accent); font-size:14px; }
+  .bloque-acordeon-body{ padding:10px 12px 12px; }
   .fila-ejercicio-editor{
     background:var(--bg-input); border:1px solid var(--line); border-radius:10px;
     padding:0; margin-bottom:8px; overflow:hidden;
@@ -1487,6 +1503,14 @@
     return filtrados;
   }
 
+  function toggleBloqueAcordeon(id){
+    const cuerpo = document.getElementById("cuerpo-" + id);
+    const flecha = document.getElementById("flecha-" + id);
+    const abrir = cuerpo.style.display !== "block";
+    cuerpo.style.display = abrir ? "block" : "none";
+    flecha.textContent = abrir ? "▴" : "▾";
+  }
+
   function escJs(s){ return String(s).replace(/\\/g,"\\\\").replace(/'/g,"\\'"); }
 
   // --- Nuevo flujo para agregar ejercicios: Grupo muscular -> Ejercicio ---
@@ -1615,8 +1639,19 @@
       const ordenBloques = [...ORDEN_BLOQUES_EDITOR];
       Object.keys(bloques).forEach(b => { if(!ordenBloques.includes(b)) ordenBloques.push(b); });
 
+      html += `<div class="bloques-label">Bloques</div>`;
+
       ordenBloques.forEach(bloque => {
-        html += `<div class="bloque-editor-titulo">${bloque}</div>`;
+        const idAcc = `acc-${alumnoId}-${dia}-${bloque.replace(/\s+/g,"_")}`;
+        const cantidadEnBloque = (bloques[bloque] || []).length;
+        html += `
+          <div class="bloque-acordeon">
+            <div class="bloque-acordeon-header" onclick="toggleBloqueAcordeon('${idAcc}')">
+              <span>${bloque}${cantidadEnBloque ? ` (${cantidadEnBloque})` : ""}</span>
+              <span class="flecha-resumen" id="flecha-${idAcc}">▾</span>
+            </div>
+            <div class="bloque-acordeon-body" id="cuerpo-${idAcc}" style="display:none;">
+        `;
         (bloques[bloque] || []).forEach(ej => {
           const resumen = ej.usa_cronometro
             ? `Cronómetro · ${ej.series ?? "-"} rondas`
@@ -1670,6 +1705,8 @@
         });
 
         html += armarBloqueAgregar(catalogo, bloque, lugarAlumno, rutina.id, dia, (nombresDias[dia]||"Dia "+dia), alumnoId, pesoBasePorEjercicio);
+
+        html += `</div></div>`;
       });
 
       html += `</div>`;
