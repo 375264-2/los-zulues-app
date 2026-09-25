@@ -1323,7 +1323,7 @@
     if(abrir) await cargarEjerciciosRutina(alumnoId);
   }
 
-  async function cargarEjerciciosRutina(alumnoId){
+  async function cargarEjerciciosRutina(alumnoId, diaAMantener){
     const panel = document.getElementById("ejercicios-" + alumnoId);
     const rutina = rutinaPorAlumnoGlobal[alumnoId];
 
@@ -1373,15 +1373,17 @@
     };
     const NOMBRES_SEMANA = PATRONES_DIAS[ordenDias.length] || ["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado","Domingo"];
 
+    const diaActivo = (diaAMantener !== undefined && ordenDias.includes(diaAMantener)) ? diaAMantener : ordenDias[0];
+
     let tabsHtml = `<div class="dias-tabs">`;
     ordenDias.forEach((dia, i) => {
-      tabsHtml += `<button class="dia-tab-btn${i===0?" activo":""}" id="tab-dia-${alumnoId}-${dia}" onclick="mostrarDiaEjercicios('${alumnoId}', ${dia})">${NOMBRES_SEMANA[i] || ("Día " + dia)}</button>`;
+      tabsHtml += `<button class="dia-tab-btn${dia===diaActivo?" activo":""}" id="tab-dia-${alumnoId}-${dia}" onclick="mostrarDiaEjercicios('${alumnoId}', ${dia})">${NOMBRES_SEMANA[i] || ("Día " + dia)}</button>`;
     });
     tabsHtml += `</div>`;
 
     let html = tabsHtml;
     ordenDias.forEach((dia, i) => {
-      html += `<div class="dia-editor" id="dia-contenido-${alumnoId}-${dia}" style="${i===0 ? "" : "display:none;"}"><h3>${nombresDias[dia] || ("Dia " + dia)}</h3>`;
+      html += `<div class="dia-editor" id="dia-contenido-${alumnoId}-${dia}" style="${dia===diaActivo ? "" : "display:none;"}"><h3>${nombresDias[dia] || ("Dia " + dia)}</h3>`;
 
       const bloques = {};
       dias[dia].forEach(e => {
@@ -1441,7 +1443,7 @@
                 </div>
                 <div class="acciones-fila-ej">
                   <button class="btn-guardar-fila" onclick="guardarFilaEjercicio('${ej.id}', '${alumnoId}', '${bloque}')">Guardar</button>
-                  <button class="btn-borrar-fila" onclick="borrarFilaEjercicio('${ej.id}','${alumnoId}')">Borrar ejercicio</button>
+                  <button class="btn-borrar-fila" onclick="borrarFilaEjercicio('${ej.id}','${alumnoId}', ${dia})">Borrar ejercicio</button>
                 </div>
               </div>            </div>
           `;
@@ -1529,14 +1531,14 @@
     }
   }
 
-  async function borrarFilaEjercicio(ejercicioId, alumnoId){
+  async function borrarFilaEjercicio(ejercicioId, alumnoId, dia){
     if(!confirm("¿Borrar este ejercicio de la rutina?")) return;
     const { error } = await sb.from("rutina_ejercicios").delete().eq("id", ejercicioId);
     if(error){
       alert("Error borrando: " + error.message);
       return;
     }
-    await cargarEjerciciosRutina(alumnoId);
+    await cargarEjerciciosRutina(alumnoId, dia);
   }
 
   async function agregarFilaEjercicio(rutinaId, dia, nombreDia, bloque, nombreEjercicio, alumnoId){
@@ -1577,7 +1579,7 @@
       alert("Error agregando el ejercicio: " + error.message);
       return;
     }
-    await cargarEjerciciosRutina(alumnoId);
+    await cargarEjerciciosRutina(alumnoId, dia);
   }
 
 </script>
