@@ -281,6 +281,31 @@
     border-radius:8px; padding:0 14px; font-size:13px; cursor:pointer; white-space:nowrap;
   }
 
+  .agregar-ejercicio-nuevo{ margin-top:8px; margin-bottom:6px; }
+  .grupos-agregar-grid{
+    display:grid; grid-template-columns:repeat(auto-fill,minmax(110px,1fr));
+    gap:6px;
+  }
+  .btn-grupo-agregar{
+    background:var(--bg-input); border:1px solid var(--line); color:var(--text-dim);
+    border-radius:8px; padding:8px 6px; font-size:11.5px; font-weight:600;
+    cursor:pointer; text-align:center;
+  }
+  .btn-grupo-agregar.activo{
+    background:var(--accent-vivid); color:var(--text); border-color:var(--accent-vivid);
+  }
+  .lista-ejercicios-agregar{
+    margin-top:8px; max-height:220px; overflow-y:auto;
+    border:1px solid var(--line); border-radius:8px; padding:6px;
+    background:var(--bg-input);
+  }
+  .ejercicio-item-agregar{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:9px 8px; font-size:13px; border-radius:6px; cursor:pointer;
+  }
+  .ejercicio-item-agregar:active{ background:rgba(201,226,101,.35); }
+  .agregar-plus{ color:var(--accent); font-weight:700; font-size:15px; flex:0 0 auto; margin-left:8px; }
+
   .fila-peso{
     display:flex; align-items:center; gap:8px;
     background:var(--bg-input); border:1px solid var(--line); border-radius:9px;
@@ -1211,7 +1236,7 @@
 
   async function obtenerCatalogo(){
     if(catalogoEjerciciosCache) return catalogoEjerciciosCache;
-    const { data } = await sb.from("catalogo_ejercicios").select("nombre_ejercicio, bloque, zona_corporal, usa_cronometro_default, ubicacion").order("nombre_ejercicio");
+    const { data } = await sb.from("catalogo_ejercicios").select("nombre_ejercicio, bloque, zona_corporal, grupo_muscular, usa_cronometro_default, ubicacion").order("nombre_ejercicio");
     catalogoEjerciciosCache = data || [];
     return catalogoEjerciciosCache;
   }
@@ -1231,6 +1256,64 @@
     return filtrados
       .map(e => `<option value="${e.nombre_ejercicio}" ${e.nombre_ejercicio===seleccionado?"selected":""}>${e.nombre_ejercicio}</option>`)
       .join("");
+  }
+
+  function catalogoFiltradoPorBloque(catalogo, bloque, lugar){
+    let filtrados = bloque === "Core"
+      ? catalogo.filter(e => e.zona_corporal === "Core")
+      : catalogo.filter(e => e.bloque === bloque);
+    if(lugar){
+      filtrados = filtrados.filter(e => !e.ubicacion || e.ubicacion === "Ambos" || e.ubicacion === lugar);
+    }
+    return filtrados;
+  }
+
+  function escJs(s){ return String(s).replace(/\\/g,"\\\\").replace(/'/g,"\\'"); }
+
+  // --- Nuevo flujo para agregar ejercicios: Grupo muscular -> Ejercicio ---
+  let contextoAgregarPorContenedor = {};
+
+  function armarBloqueAgregar(catalogo, bloque, lugar, rutinaId, dia, nombreDia, alumnoId){
+    const contId = `agregar-${dia}-${bloque.replace(/\s+/g,"_")}-${alumnoId}`;
+    const filtrados = catalogoFiltradoPorBloque(catalogo, bloque, lugar);
+    contextoAgregarPorContenedor[contId] = { filtrados, rutinaId, dia, nombreDia, bloque, alumnoId };
+
+    const grupos = [...new Set(filtrados.map(e => e.grupo_muscular || "Otros"))].sort((a,b)=>a.localeCompare(b,"es"));
+
+    const gruposHtml = grupos.map(g =>
+      `<button type="button" class="btn-grupo-agregar" onclick="mostrarGrupoAgregar('${contId}','${escJs(g)}', this)">${g}</button>`
+    ).join("");
+
+    return `
+      <div class="agregar-ejercicio-nuevo">
+        <div class="grupos-agregar-grid" id="grupos-${contId}">${gruposHtml}</div>
+        <div class="lista-ejercicios-agregar" id="lista-${contId}" style="display:none;"></div>
+      </div>
+    `;
+  }
+
+  function mostrarGrupoAgregar(contId, grupo, btnElemento){
+    document.getElementById("grupos-" + contId).querySelectorAll(".btn-grupo-agregar")
+      .forEach(b => b.classList.remove("activo"));
+    btnElemento.classList.add("activo");
+
+    const ctx = contextoAgregarPorContenedor[contId];
+    const lista = document.getElementById("lista-" + contId);
+    lista.style.display = "block";
+
+    const filtrados = ctx.filtrados.filter(e => (e.grupo_muscular || "Otros") === grupo);
+
+    if(filtrados.length === 0){
+      lista.innerHTML = `<div class="sin-historial">No hay ejercicios en este grupo para el lugar de entrenamiento del alumno.</div>`;
+      return;
+    }
+
+    lista.innerHTML = filtrados.map(e => `
+      <div class="ejercicio-item-agregar" onclick="agregarFilaEjercicio('${ctx.rutinaId}', ${ctx.dia}, '${escJs(ctx.nombreDia)}', '${escJs(ctx.bloque)}', '${escJs(e.nombre_ejercicio)}', '${ctx.alumnoId}')">
+        <span>${e.nombre_ejercicio}</span>
+        <span class="agregar-plus">＋</span>
+      </div>
+    `).join("");
   }
 
   async function togglePanelEjercicios(alumnoId){
@@ -1364,13 +1447,7 @@
           `;
         });
 
-        const idSelectAgregar = `agregar-${dia}-${bloque.replace(/\s+/g,"_")}-${alumnoId}`;
-        html += `
-          <div class="agregar-ejercicio">
-            <select id="${idSelectAgregar}">${opcionesCatalogoPorBloque(catalogo, bloque, null, lugarAlumno)}</select>
-            <button onclick="agregarFilaEjercicio('${rutina.id}', ${dia}, '${(nombresDias[dia]||"Dia "+dia).replace(/'/g,"\\'")}', '${bloque}', '${idSelectAgregar}', '${alumnoId}')">+ Agregar</button>
-          </div>
-        `;
+        html += armarBloqueAgregar(catalogo, bloque, lugarAlumno, rutina.id, dia, (nombresDias[dia]||"Dia "+dia), alumnoId);
       });
 
       html += `</div>`;
@@ -1462,8 +1539,7 @@
     await cargarEjerciciosRutina(alumnoId);
   }
 
-  async function agregarFilaEjercicio(rutinaId, dia, nombreDia, bloque, idSelect, alumnoId){
-    const nombreEjercicio = document.getElementById(idSelect).value;
+  async function agregarFilaEjercicio(rutinaId, dia, nombreDia, bloque, nombreEjercicio, alumnoId){
     const rutina = rutinaPorAlumnoGlobal[alumnoId];
     const rir = rutina ? rutina.rir_objetivo : 4;
 
