@@ -359,6 +359,36 @@
   .fila-catalogo .nombre-catalogo{ font-size:13px; flex:1; }
   .fila-catalogo .zona-catalogo{ font-size:11px; color:var(--text-dim); }
   .cargando-lista{ color:var(--text-dim); font-size:14px; }
+
+  .comparador-columnas{ display:flex; flex-direction:column; gap:26px; }
+  @media(min-width:820px){
+    .comparador-columnas{ flex-direction:row; }
+    .comparador-col{ flex:1; min-width:0; }
+  }
+  .comparador-col{ border:1px solid var(--line); border-radius:10px; padding:14px; background:var(--bg-card); }
+  .comparador-col h3{ font-size:14.5px; margin:0 0 10px; }
+  .grid-botones-cmp{ display:grid; grid-template-columns:repeat(auto-fill,minmax(100px,1fr)); gap:6px; margin-top:8px; }
+  .grid-botones-cmp button{
+    background:var(--bg-input); border:1px solid var(--line); color:var(--text-dim);
+    border-radius:8px; padding:8px 6px; font-size:11px; font-weight:600; cursor:pointer; text-align:center;
+  }
+  .grid-botones-cmp button.activo{ background:var(--accent-vivid); color:var(--text); border-color:var(--accent-vivid); }
+  .lista-cmp{
+    margin-top:8px; max-height:200px; overflow-y:auto;
+    border:1px solid var(--line); border-radius:8px; padding:6px; background:var(--bg-input);
+  }
+  .lista-cmp .item-cmp{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:8px 7px; font-size:13px; border-radius:6px; cursor:pointer;
+  }
+  .lista-cmp .item-cmp:active{ background:rgba(201,226,101,.35); }
+  .cmp-agregados{ margin-top:12px; }
+  .cmp-agregados-titulo{ font-size:12px; color:var(--text-dim); margin-bottom:6px; }
+  .cmp-agregado-item{ padding:7px 9px; background:var(--bg-input); border:1px solid var(--line); border-radius:6px; font-size:13px; margin-bottom:5px; }
+  .tabla-cmp{ width:100%; margin-top:10px; border-collapse:collapse; font-size:12.5px; }
+  .tabla-cmp th, .tabla-cmp td{ padding:6px 5px; border-bottom:1px solid var(--line); text-align:left; }
+  .tabla-cmp input{ width:46px; padding:4px; text-align:center; border:1px solid var(--line); border-radius:4px; background:var(--bg-input); color:var(--text); font-size:12px; }
+  .btn-x-cmp{ background:var(--danger); color:#fff; border:none; border-radius:4px; padding:4px 7px; font-size:11px; cursor:pointer; }
 </style>
 </head>
 <body>
@@ -477,6 +507,55 @@
         <button class="btn-principal" style="margin-top:14px;" onclick="agregarEjercicioCatalogo()">Agregar al catálogo</button>
 
         <div id="lista-catalogo" class="cargando-lista" style="margin-top:20px;">Cargando…</div>
+      </div>
+    </section>
+
+    <section>
+      <h2 class="h2-clickeable" onclick="toggleComparador()">
+        ⚖️ Comparar formas de agregar ejercicios <span id="flecha-comparador">▾</span>
+      </h2>
+
+      <div id="panel-comparador" style="display:none; margin-top:16px;">
+        <p style="color:var(--text-dim); font-size:13px; margin-bottom:14px;">
+          Esto es una prueba de mesa — no toca ninguna rutina real de ningún alumno. Probá las dos formas y decidí cuál te resulta más cómoda.
+        </p>
+        <div class="comparador-columnas">
+
+          <div class="comparador-col">
+            <h3>Opción A — Como está ahora</h3>
+            <label>Bloque</label>
+            <select id="cmpA-bloque" onchange="cmpA_cambiarBloque()">
+              <option value="Entrada en Calor">Entrada en Calor</option>
+              <option value="Activacion Neuromuscular">Activación Neuromuscular / Core</option>
+              <option value="Fuerza - Hipertrofia" selected>Fuerza - Hipertrofia</option>
+              <option value="Bloque HIT">Bloque HIT</option>
+            </select>
+            <div class="grid-botones-cmp" id="cmpA-grupos"></div>
+            <div class="lista-cmp" id="cmpA-lista" style="display:none;"></div>
+            <div class="cmp-agregados">
+              <div class="cmp-agregados-titulo">Agregados a esta sesión de prueba:</div>
+              <div id="cmpA-agregados" class="cmp-agregados-lista"></div>
+            </div>
+          </div>
+
+          <div class="comparador-col">
+            <h3>Opción B — La que trajiste</h3>
+            <label>Fase</label>
+            <select id="cmpB-bloque" onchange="cmpB_cambiarBloque()">
+              <option value="Entrada en Calor">Entrada en Calor</option>
+              <option value="Activacion Neuromuscular">Ejercicios Neuromusculares / Core</option>
+              <option value="Fuerza - Hipertrofia" selected>Ejercicios de Hipertrofia</option>
+              <option value="Bloque HIT">HIIT / Cardio Final</option>
+            </select>
+            <div class="grid-botones-cmp" id="cmpB-grupos"></div>
+            <div class="lista-cmp" id="cmpB-lista" style="display:none;"></div>
+            <table class="tabla-cmp" id="cmpB-tabla" style="display:none;">
+              <thead><tr><th>Ejercicio</th><th>Series</th><th>Reps</th><th>Peso</th><th></th></tr></thead>
+              <tbody id="cmpB-tabla-body"></tbody>
+            </table>
+          </div>
+
+        </div>
       </div>
     </section>
   </main>
@@ -601,6 +680,121 @@
     flecha.textContent = abrir ? "▴" : "▾";
     if(abrir) await cargarListaCatalogo();
   }
+
+  // ================== COMPARADOR (prueba de mesa, no toca datos reales) ==================
+  let cmpA_agregados = [];
+  let cmpB_agregados = [];
+
+  async function toggleComparador(){
+    const panel = document.getElementById("panel-comparador");
+    const flecha = document.getElementById("flecha-comparador");
+    const abrir = panel.style.display !== "block";
+    panel.style.display = abrir ? "block" : "none";
+    flecha.textContent = abrir ? "▴" : "▾";
+    if(abrir){
+      await cmpA_cambiarBloque();
+      await cmpB_cambiarBloque();
+    }
+  }
+
+  // --- Opción A: click agrega directo a una lista simple (como está hoy) ---
+  async function cmpA_cambiarBloque(){
+    const bloque = document.getElementById("cmpA-bloque").value;
+    const catalogo = await obtenerCatalogo();
+    const filtrados = catalogoFiltradoPorBloque(catalogo, bloque, null);
+    const grupos = [...new Set(filtrados.map(e => e.grupo_muscular || "Otros"))].sort((a,b)=>a.localeCompare(b,"es"));
+
+    document.getElementById("cmpA-grupos").innerHTML = grupos.map(g =>
+      `<button type="button" onclick="cmpA_mostrarGrupo('${escJs(g)}', this)">${g}</button>`
+    ).join("");
+    document.getElementById("cmpA-lista").style.display = "none";
+    cmpA_catalogoActual = filtrados;
+  }
+  let cmpA_catalogoActual = [];
+
+  function cmpA_mostrarGrupo(grupo, btnElemento){
+    document.getElementById("cmpA-grupos").querySelectorAll("button").forEach(b => b.classList.remove("activo"));
+    btnElemento.classList.add("activo");
+    const lista = document.getElementById("cmpA-lista");
+    lista.style.display = "block";
+    const filtrados = cmpA_catalogoActual.filter(e => (e.grupo_muscular || "Otros") === grupo);
+    lista.innerHTML = filtrados.map(e => `
+      <div class="item-cmp" onclick="cmpA_agregar('${escJs(e.nombre_ejercicio)}')">
+        <span>${e.nombre_ejercicio}</span><span class="agregar-plus">＋</span>
+      </div>
+    `).join("");
+  }
+
+  function cmpA_agregar(nombre){
+    cmpA_agregados.push(nombre);
+    document.getElementById("cmpA-agregados").innerHTML = cmpA_agregados.map((n,i) =>
+      `<div class="cmp-agregado-item">${n}</div>`
+    ).join("") || `<div style="font-size:12px;color:var(--text-dim);">Nada agregado todavía.</div>`;
+  }
+
+  // --- Opción B: click agrega a una tabla editable (series/reps/peso ahí mismo) ---
+  let cmpB_catalogoActual = [];
+
+  async function cmpB_cambiarBloque(){
+    const bloque = document.getElementById("cmpB-bloque").value;
+    const catalogo = await obtenerCatalogo();
+    const filtrados = catalogoFiltradoPorBloque(catalogo, bloque, null);
+    const grupos = [...new Set(filtrados.map(e => e.grupo_muscular || "Otros"))].sort((a,b)=>a.localeCompare(b,"es"));
+
+    document.getElementById("cmpB-grupos").innerHTML = grupos.map(g =>
+      `<button type="button" onclick="cmpB_mostrarGrupo('${escJs(g)}', this)">${g}</button>`
+    ).join("");
+    document.getElementById("cmpB-lista").style.display = "none";
+    cmpB_catalogoActual = filtrados;
+  }
+
+  function cmpB_mostrarGrupo(grupo, btnElemento){
+    document.getElementById("cmpB-grupos").querySelectorAll("button").forEach(b => b.classList.remove("activo"));
+    btnElemento.classList.add("activo");
+    const lista = document.getElementById("cmpB-lista");
+    lista.style.display = "block";
+    const filtrados = cmpB_catalogoActual.filter(e => (e.grupo_muscular || "Otros") === grupo);
+    lista.innerHTML = filtrados.map(e => `
+      <div class="item-cmp" onclick="cmpB_agregar('${escJs(e.nombre_ejercicio)}')">
+        <span>${e.nombre_ejercicio}</span><span class="agregar-plus">＋</span>
+      </div>
+    `).join("");
+  }
+
+  function cmpB_agregar(nombre){
+    cmpB_agregados.push({ idUnico: Date.now() + Math.random(), nombre, series: 4, reps: 10, peso: 0 });
+    cmpB_renderizarTabla();
+  }
+
+  function cmpB_eliminar(idUnico){
+    cmpB_agregados = cmpB_agregados.filter(i => i.idUnico !== idUnico);
+    cmpB_renderizarTabla();
+  }
+
+  function cmpB_actualizarValor(idUnico, campo, valor){
+    const item = cmpB_agregados.find(i => i.idUnico === idUnico);
+    if(item) item[campo] = parseFloat(valor) || 0;
+  }
+
+  function cmpB_renderizarTabla(){
+    const tabla = document.getElementById("cmpB-tabla");
+    const tbody = document.getElementById("cmpB-tabla-body");
+    if(cmpB_agregados.length === 0){
+      tabla.style.display = "none";
+      return;
+    }
+    tabla.style.display = "table";
+    tbody.innerHTML = cmpB_agregados.map(item => `
+      <tr>
+        <td>${item.nombre}</td>
+        <td><input type="number" min="1" value="${item.series}" onchange="cmpB_actualizarValor(${item.idUnico}, 'series', this.value)"></td>
+        <td><input type="number" min="1" value="${item.reps}" onchange="cmpB_actualizarValor(${item.idUnico}, 'reps', this.value)"></td>
+        <td><input type="number" min="0" step="0.5" value="${item.peso}" onchange="cmpB_actualizarValor(${item.idUnico}, 'peso', this.value)"></td>
+        <td><button class="btn-x-cmp" onclick="cmpB_eliminar(${item.idUnico})">X</button></td>
+      </tr>
+    `).join("");
+  }
+  // ================== FIN COMPARADOR ==================
 
   function onCambioBloqueCatalogo(){
     const bloque = document.getElementById("cat-bloque").value;
