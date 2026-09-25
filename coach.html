@@ -326,11 +326,23 @@
 
   .rutina-planificada{ margin-top:16px; }
   .rutina-planificada-titulo{ font-weight:700; font-size:14px; margin-bottom:8px; color:var(--accent); }
-  .tabla-planificada{ width:100%; border-collapse:collapse; font-size:12px; margin-bottom:10px; }
-  .tabla-planificada th, .tabla-planificada td{ padding:6px 4px; border-bottom:1px solid var(--line); text-align:left; }
-  .tabla-planificada input{
-    width:42px; padding:4px; text-align:center; border:1px solid var(--line);
-    border-radius:4px; background:var(--bg-input); color:var(--text); font-size:11.5px;
+  .planificada-items{ display:flex; flex-direction:column; gap:8px; margin-bottom:10px; }
+  .planificada-item{
+    border:1px solid var(--line); border-radius:10px; padding:10px;
+    background:var(--bg-input);
+  }
+  .planificada-item-header{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px; }
+  .planificada-nombre{ font-size:13.5px; font-weight:600; }
+  .planificada-bloque{ font-size:10.5px; color:var(--text-dim); }
+  .planificada-campos{ display:grid; grid-template-columns:repeat(3,1fr); gap:6px; }
+  .planificada-campos label{ font-size:10.5px; color:var(--text-dim); margin:0; }
+  .planificada-campos input{
+    width:100%; padding:6px 5px; text-align:center; border:1px solid var(--line);
+    border-radius:5px; background:var(--bg); color:var(--text); font-size:12.5px; margin-top:2px;
+  }
+  .btn-quitar-planificado{
+    margin-top:8px; width:100%; background:none; border:1px solid var(--danger);
+    color:var(--danger); border-radius:6px; padding:6px 0; font-size:12px; cursor:pointer;
   }
   .btn-guardar-planificada{
     width:100%; background:var(--accent-vivid); border:none; color:var(--text);
@@ -1597,6 +1609,8 @@
       itemElemento.classList.remove("marcado");
       itemElemento.querySelector(".agregar-plus").textContent = "＋";
     } else {
+      const infoCatalogo = ctx.filtrados.find(e => e.nombre_ejercicio === nombreEjercicio);
+      const usaCrono = !!(infoCatalogo && infoCatalogo.usa_cronometro_default);
       const esFuerza = ctx.bloque === "Fuerza - Hipertrofia";
       const pesoBase = (ctx.pesoBasePorEjercicio || {})[nombreEjercicio];
       lista.push({
@@ -1605,10 +1619,13 @@
         bloque: ctx.bloque,
         rutinaId: ctx.rutinaId,
         nombreDia: ctx.nombreDia,
-        series: esFuerza ? 4 : (ctx.bloque === "Entrada en Calor" ? 1 : 2),
+        usaCrono: usaCrono,
+        series: usaCrono ? 3 : (esFuerza ? 4 : (ctx.bloque === "Entrada en Calor" ? 1 : 2)),
         repsMin: 10,
         repsMax: esFuerza ? 10 : 12,
-        peso: (pesoBase != null) ? pesoBase : ""
+        peso: (pesoBase != null) ? pesoBase : "",
+        duracionTrabajo: usaCrono ? 30 : "",
+        descanso: usaCrono ? 15 : ""
       });
       itemElemento.classList.add("marcado");
       itemElemento.querySelector(".agregar-plus").textContent = "✓";
@@ -1628,23 +1645,29 @@
 
     cont.innerHTML = `
       <div class="rutina-planificada-titulo">📋 Rutina Planificada (${lista.length})</div>
-      <table class="tabla-planificada">
-        <thead><tr><th>Ejercicio</th><th>Bloque</th><th>Series</th><th>Reps</th><th>Peso</th><th></th></tr></thead>
-        <tbody>
-          ${lista.map(item => `
-            <tr>
-              <td>${item.nombre}</td>
-              <td>${item.bloque}</td>
-              <td><input type="number" min="1" value="${item.series}" onchange="actualizarPlanificado('${alumnoId}', ${dia}, ${item.idTmp}, 'series', this.value)"></td>
-              <td>
-                <input type="number" min="1" value="${item.repsMin}" style="width:38px" onchange="actualizarPlanificado('${alumnoId}', ${dia}, ${item.idTmp}, 'repsMin', this.value)">–<input type="number" min="1" value="${item.repsMax}" style="width:38px" onchange="actualizarPlanificado('${alumnoId}', ${dia}, ${item.idTmp}, 'repsMax', this.value)">
-              </td>
-              <td><input type="number" min="0" step="0.5" value="${item.peso}" onchange="actualizarPlanificado('${alumnoId}', ${dia}, ${item.idTmp}, 'peso', this.value)"></td>
-              <td><button class="btn-x-cmp" onclick="quitarPlanificado('${alumnoId}', ${dia}, ${item.idTmp})">X</button></td>
-            </tr>
-          `).join("")}
-        </tbody>
-      </table>
+      <div class="planificada-items">
+        ${lista.map(item => `
+          <div class="planificada-item">
+            <div class="planificada-item-header">
+              <span class="planificada-nombre">${item.nombre}${item.usaCrono ? " ⏱" : ""}</span>
+              <span class="planificada-bloque">${item.bloque}</span>
+            </div>
+            <div class="planificada-campos">
+              ${item.usaCrono ? `
+                <label>Rondas<input type="number" min="1" value="${item.series}" onchange="actualizarPlanificado('${alumnoId}', ${dia}, ${item.idTmp}, 'series', this.value)"></label>
+                <label>Trabajo (s)<input type="number" min="1" value="${item.duracionTrabajo}" onchange="actualizarPlanificado('${alumnoId}', ${dia}, ${item.idTmp}, 'duracionTrabajo', this.value)"></label>
+                <label>Descanso (s)<input type="number" min="0" value="${item.descanso}" onchange="actualizarPlanificado('${alumnoId}', ${dia}, ${item.idTmp}, 'descanso', this.value)"></label>
+              ` : `
+                <label>Series<input type="number" min="1" value="${item.series}" onchange="actualizarPlanificado('${alumnoId}', ${dia}, ${item.idTmp}, 'series', this.value)"></label>
+                <label>Reps min<input type="number" min="1" value="${item.repsMin}" onchange="actualizarPlanificado('${alumnoId}', ${dia}, ${item.idTmp}, 'repsMin', this.value)"></label>
+                <label>Reps max<input type="number" min="1" value="${item.repsMax}" onchange="actualizarPlanificado('${alumnoId}', ${dia}, ${item.idTmp}, 'repsMax', this.value)"></label>
+                <label>Peso (kg)<input type="number" min="0" step="0.5" value="${item.peso}" onchange="actualizarPlanificado('${alumnoId}', ${dia}, ${item.idTmp}, 'peso', this.value)"></label>
+              `}
+            </div>
+            <button class="btn-quitar-planificado" onclick="quitarPlanificado('${alumnoId}', ${dia}, ${item.idTmp})">Quitar</button>
+          </div>
+        `).join("")}
+      </div>
       <button class="btn-guardar-planificada" id="btn-guardar-plan-${alumnoId}-${dia}" onclick="guardarRutinaPlanificada('${alumnoId}', ${dia})">Guardar en la rutina (${lista.length})</button>
     `;
   }
@@ -1667,13 +1690,11 @@
     const boton = document.getElementById(`btn-guardar-plan-${alumnoId}-${dia}`);
     if(boton){ boton.disabled = true; boton.textContent = "Guardando..."; }
 
-    const catalogo = await obtenerCatalogo();
     const rutina = rutinaPorAlumnoGlobal[alumnoId];
     const rir = rutina ? rutina.rir_objetivo : 4;
 
     for(const item of lista){
-      const infoCatalogo = catalogo.find(e => e.nombre_ejercicio === item.nombre);
-      const usaCrono = !!(infoCatalogo && infoCatalogo.usa_cronometro_default);
+      const usaCrono = item.usaCrono;
 
       const { data: maxOrdenData } = await sb
         .from("rutina_ejercicios")
@@ -1692,13 +1713,13 @@
         orden: nuevoOrden,
         nombre_ejercicio: item.nombre,
         series: item.series === "" ? null : item.series,
-        reps_min: item.repsMin === "" ? null : item.repsMin,
-        reps_max: item.repsMax === "" ? null : item.repsMax,
-        rir: item.bloque === "Fuerza - Hipertrofia" ? rir : null,
-        descanso_seg: item.bloque === "Fuerza - Hipertrofia" ? 90 : 30,
-        peso_kg: (item.peso === "" || item.peso == null) ? null : item.peso,
+        reps_min: usaCrono ? null : (item.repsMin === "" ? null : item.repsMin),
+        reps_max: usaCrono ? null : (item.repsMax === "" ? null : item.repsMax),
+        rir: (!usaCrono && item.bloque === "Fuerza - Hipertrofia") ? rir : null,
+        descanso_seg: usaCrono ? (item.descanso === "" ? null : item.descanso) : (item.bloque === "Fuerza - Hipertrofia" ? 90 : 30),
+        peso_kg: usaCrono ? null : ((item.peso === "" || item.peso == null) ? null : item.peso),
         usa_cronometro: usaCrono,
-        duracion_trabajo_seg: usaCrono ? 30 : null
+        duracion_trabajo_seg: usaCrono ? (item.duracionTrabajo === "" ? null : item.duracionTrabajo) : null
       });
     }
 
