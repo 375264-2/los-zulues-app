@@ -1711,7 +1711,10 @@
     const panel = document.getElementById("ejercicios-" + alumnoId);
     const abrir = panel.style.display !== "block";
     panel.style.display = abrir ? "block" : "none";
-    if(abrir) await cargarEjerciciosRutina(alumnoId);
+    if(abrir){
+      seleccionadosPorDia[alumnoId] = {}; // arranca limpio, sin marcas de una sesión anterior
+      await cargarEjerciciosRutina(alumnoId);
+    }
   }
 
   async function cargarEjerciciosRutina(alumnoId, diaAMantener){
