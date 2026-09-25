@@ -1335,63 +1335,11 @@
     }
 
     lista.innerHTML = filtrados.map(e => `
-      <div class="ejercicio-item-agregar" onclick="mostrarConfigAgregar('${contId}','${escJs(e.nombre_ejercicio)}')">
+      <div class="ejercicio-item-agregar" onclick="agregarFilaEjercicio('${ctx.rutinaId}', ${ctx.dia}, '${escJs(ctx.nombreDia)}', '${escJs(ctx.bloque)}', '${escJs(e.nombre_ejercicio)}', '${ctx.alumnoId}')">
         <span>${e.nombre_ejercicio}</span>
         <span class="agregar-plus">＋</span>
       </div>
     `).join("");
-  }
-
-  function mostrarConfigAgregar(contId, nombreEjercicio){
-    const ctx = contextoAgregarPorContenedor[contId];
-    const esFuerza = ctx.bloque === "Fuerza - Hipertrofia";
-    const defSeries = esFuerza ? 4 : (ctx.bloque === "Entrada en Calor" ? 1 : 2);
-    const defRepsMin = 10;
-    const defRepsMax = esFuerza ? 10 : 12;
-    const pesoBase = (ctx.pesoBasePorEjercicio || {})[nombreEjercicio];
-    const defPeso = (pesoBase != null) ? pesoBase : "";
-
-    document.getElementById("lista-" + contId).style.display = "none";
-    const cfg = document.getElementById("config-" + contId);
-    cfg.style.display = "block";
-    cfg.innerHTML = `
-      <div class="config-agregar-titulo">${nombreEjercicio}</div>
-      <div class="config-agregar-grid">
-        <label>Series<input type="number" id="cfg-series-${contId}" value="${defSeries}"></label>
-        <label>Reps min<input type="number" id="cfg-repsmin-${contId}" value="${defRepsMin}"></label>
-        <label>Reps max<input type="number" id="cfg-repsmax-${contId}" value="${defRepsMax}"></label>
-        <label>Peso (kg)<input type="number" step="0.5" id="cfg-peso-${contId}" value="${defPeso}" placeholder="opcional"></label>
-      </div>
-      <div class="config-agregar-botones">
-        <button type="button" class="btn-confirmar-config" onclick="confirmarAgregarEjercicio('${contId}','${escJs(nombreEjercicio)}')">Agregar a la rutina</button>
-        <button type="button" class="btn-cancelar-config" onclick="cancelarConfigAgregar('${contId}')">Cancelar</button>
-      </div>
-    `;
-  }
-
-  function cancelarConfigAgregar(contId){
-    document.getElementById("config-" + contId).style.display = "none";
-    document.getElementById("lista-" + contId).style.display = "block";
-  }
-
-  async function confirmarAgregarEjercicio(contId, nombreEjercicio){
-    const ctx = contextoAgregarPorContenedor[contId];
-    const boton = document.querySelector(`#config-${contId} .btn-confirmar-config`);
-    if(boton){ boton.disabled = true; boton.textContent = "Agregando..."; }
-
-    const numOrNull = (id) => {
-      const v = document.getElementById(id).value.trim();
-      return v === "" ? null : parseFloat(v.replace(",", "."));
-    };
-
-    const datos = {
-      series: numOrNull(`cfg-series-${contId}`),
-      repsMin: numOrNull(`cfg-repsmin-${contId}`),
-      repsMax: numOrNull(`cfg-repsmax-${contId}`),
-      peso: numOrNull(`cfg-peso-${contId}`)
-    };
-
-    await agregarFilaEjercicio(ctx.rutinaId, ctx.dia, ctx.nombreDia, ctx.bloque, nombreEjercicio, ctx.alumnoId, datos);
   }
 
   async function togglePanelEjercicios(alumnoId){
