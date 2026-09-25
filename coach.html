@@ -320,7 +320,22 @@
     padding:9px 8px; font-size:13px; border-radius:6px; cursor:pointer;
   }
   .ejercicio-item-agregar:active{ background:rgba(201,226,101,.35); }
+  .ejercicio-item-agregar.marcado{ background:rgba(201,226,101,.3); border:1px solid var(--accent-vivid); }
+  .ejercicio-item-agregar.marcado .agregar-plus{ color:var(--accent-vivid); font-size:15px; }
   .agregar-plus{ color:var(--accent); font-weight:700; font-size:15px; flex:0 0 auto; margin-left:8px; }
+
+  .rutina-planificada{ margin-top:16px; }
+  .rutina-planificada-titulo{ font-weight:700; font-size:14px; margin-bottom:8px; color:var(--accent); }
+  .tabla-planificada{ width:100%; border-collapse:collapse; font-size:12px; margin-bottom:10px; }
+  .tabla-planificada th, .tabla-planificada td{ padding:6px 4px; border-bottom:1px solid var(--line); text-align:left; }
+  .tabla-planificada input{
+    width:42px; padding:4px; text-align:center; border:1px solid var(--line);
+    border-radius:4px; background:var(--bg-input); color:var(--text); font-size:11.5px;
+  }
+  .btn-guardar-planificada{
+    width:100%; background:var(--accent-vivid); border:none; color:var(--text);
+    border-radius:8px; padding:12px 0; font-size:14px; font-weight:700; cursor:pointer;
+  }
 
   .config-agregar{
     margin-top:8px; border:1px solid var(--accent-vivid); border-radius:10px;
@@ -1552,13 +1567,145 @@
       return;
     }
 
-    lista.innerHTML = filtrados.map(e => `
-      <div class="ejercicio-item-agregar" onclick="agregarFilaEjercicio('${ctx.rutinaId}', ${ctx.dia}, '${escJs(ctx.nombreDia)}', '${escJs(ctx.bloque)}', '${escJs(e.nombre_ejercicio)}', '${ctx.alumnoId}')">
-        <span>${e.nombre_ejercicio}</span>
-        <span class="agregar-plus">＋</span>
-      </div>
-    `).join("");
+    lista.innerHTML = filtrados.map(e => {
+      const marcado = obtenerListaSeleccionados(ctx.alumnoId, ctx.dia).some(i => i.nombre === e.nombre_ejercicio && i.bloque === ctx.bloque);
+      return `
+        <div class="ejercicio-item-agregar${marcado ? " marcado" : ""}" onclick="marcarEjercicioParaRutina('${contId}','${escJs(e.nombre_ejercicio)}', this)">
+          <span>${e.nombre_ejercicio}</span>
+          <span class="agregar-plus">${marcado ? "✓" : "＋"}</span>
+        </div>
+      `;
+    }).join("");
   }
+
+  // ================== RUTINA PLANIFICADA (marcar ejercicios y confirmar todos juntos) ==================
+  let seleccionadosPorDia = {};
+
+  function obtenerListaSeleccionados(alumnoId, dia){
+    if(!seleccionadosPorDia[alumnoId]) seleccionadosPorDia[alumnoId] = {};
+    if(!seleccionadosPorDia[alumnoId][dia]) seleccionadosPorDia[alumnoId][dia] = [];
+    return seleccionadosPorDia[alumnoId][dia];
+  }
+
+  function marcarEjercicioParaRutina(contId, nombreEjercicio, itemElemento){
+    const ctx = contextoAgregarPorContenedor[contId];
+    const lista = obtenerListaSeleccionados(ctx.alumnoId, ctx.dia);
+    const idx = lista.findIndex(i => i.nombre === nombreEjercicio && i.bloque === ctx.bloque);
+
+    if(idx >= 0){
+      lista.splice(idx, 1);
+      itemElemento.classList.remove("marcado");
+      itemElemento.querySelector(".agregar-plus").textContent = "＋";
+    } else {
+      const esFuerza = ctx.bloque === "Fuerza - Hipertrofia";
+      const pesoBase = (ctx.pesoBasePorEjercicio || {})[nombreEjercicio];
+      lista.push({
+        idTmp: Date.now() + Math.random(),
+        nombre: nombreEjercicio,
+        bloque: ctx.bloque,
+        rutinaId: ctx.rutinaId,
+        nombreDia: ctx.nombreDia,
+        series: esFuerza ? 4 : (ctx.bloque === "Entrada en Calor" ? 1 : 2),
+        repsMin: 10,
+        repsMax: esFuerza ? 10 : 12,
+        peso: (pesoBase != null) ? pesoBase : ""
+      });
+      itemElemento.classList.add("marcado");
+      itemElemento.querySelector(".agregar-plus").textContent = "✓";
+    }
+    renderizarRutinaPlanificada(ctx.alumnoId, ctx.dia);
+  }
+
+  function renderizarRutinaPlanificada(alumnoId, dia){
+    const lista = obtenerListaSeleccionados(alumnoId, dia);
+    const cont = document.getElementById(`planificada-${alumnoId}-${dia}`);
+    if(!cont) return;
+
+    if(lista.length === 0){
+      cont.innerHTML = "";
+      return;
+    }
+
+    cont.innerHTML = `
+      <div class="rutina-planificada-titulo">📋 Rutina Planificada (${lista.length})</div>
+      <table class="tabla-planificada">
+        <thead><tr><th>Ejercicio</th><th>Bloque</th><th>Series</th><th>Reps</th><th>Peso</th><th></th></tr></thead>
+        <tbody>
+          ${lista.map(item => `
+            <tr>
+              <td>${item.nombre}</td>
+              <td>${item.bloque}</td>
+              <td><input type="number" min="1" value="${item.series}" onchange="actualizarPlanificado('${alumnoId}', ${dia}, ${item.idTmp}, 'series', this.value)"></td>
+              <td>
+                <input type="number" min="1" value="${item.repsMin}" style="width:38px" onchange="actualizarPlanificado('${alumnoId}', ${dia}, ${item.idTmp}, 'repsMin', this.value)">–<input type="number" min="1" value="${item.repsMax}" style="width:38px" onchange="actualizarPlanificado('${alumnoId}', ${dia}, ${item.idTmp}, 'repsMax', this.value)">
+              </td>
+              <td><input type="number" min="0" step="0.5" value="${item.peso}" onchange="actualizarPlanificado('${alumnoId}', ${dia}, ${item.idTmp}, 'peso', this.value)"></td>
+              <td><button class="btn-x-cmp" onclick="quitarPlanificado('${alumnoId}', ${dia}, ${item.idTmp})">X</button></td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+      <button class="btn-guardar-planificada" id="btn-guardar-plan-${alumnoId}-${dia}" onclick="guardarRutinaPlanificada('${alumnoId}', ${dia})">Guardar en la rutina (${lista.length})</button>
+    `;
+  }
+
+  function actualizarPlanificado(alumnoId, dia, idTmp, campo, valor){
+    const lista = obtenerListaSeleccionados(alumnoId, dia);
+    const item = lista.find(i => i.idTmp === idTmp);
+    if(item) item[campo] = valor.trim() === "" ? "" : parseFloat(valor.replace(",", "."));
+  }
+
+  function quitarPlanificado(alumnoId, dia, idTmp){
+    seleccionadosPorDia[alumnoId][dia] = obtenerListaSeleccionados(alumnoId, dia).filter(i => i.idTmp !== idTmp);
+    renderizarRutinaPlanificada(alumnoId, dia);
+  }
+
+  async function guardarRutinaPlanificada(alumnoId, dia){
+    const lista = obtenerListaSeleccionados(alumnoId, dia);
+    if(lista.length === 0) return;
+
+    const boton = document.getElementById(`btn-guardar-plan-${alumnoId}-${dia}`);
+    if(boton){ boton.disabled = true; boton.textContent = "Guardando..."; }
+
+    const catalogo = await obtenerCatalogo();
+    const rutina = rutinaPorAlumnoGlobal[alumnoId];
+    const rir = rutina ? rutina.rir_objetivo : 4;
+
+    for(const item of lista){
+      const infoCatalogo = catalogo.find(e => e.nombre_ejercicio === item.nombre);
+      const usaCrono = !!(infoCatalogo && infoCatalogo.usa_cronometro_default);
+
+      const { data: maxOrdenData } = await sb
+        .from("rutina_ejercicios")
+        .select("orden")
+        .eq("rutina_id", item.rutinaId)
+        .eq("dia", dia)
+        .order("orden", { ascending:false })
+        .limit(1);
+      const nuevoOrden = (maxOrdenData && maxOrdenData[0] ? maxOrdenData[0].orden : 0) + 1;
+
+      await sb.from("rutina_ejercicios").insert({
+        rutina_id: item.rutinaId,
+        dia: dia,
+        nombre_dia: item.nombreDia,
+        bloque: item.bloque,
+        orden: nuevoOrden,
+        nombre_ejercicio: item.nombre,
+        series: item.series === "" ? null : item.series,
+        reps_min: item.repsMin === "" ? null : item.repsMin,
+        reps_max: item.repsMax === "" ? null : item.repsMax,
+        rir: item.bloque === "Fuerza - Hipertrofia" ? rir : null,
+        descanso_seg: item.bloque === "Fuerza - Hipertrofia" ? 90 : 30,
+        peso_kg: (item.peso === "" || item.peso == null) ? null : item.peso,
+        usa_cronometro: usaCrono,
+        duracion_trabajo_seg: usaCrono ? 30 : null
+      });
+    }
+
+    seleccionadosPorDia[alumnoId][dia] = [];
+    await cargarEjerciciosRutina(alumnoId, dia);
+  }
+  // ================== FIN RUTINA PLANIFICADA ==================
 
   async function togglePanelEjercicios(alumnoId){
     const panel = document.getElementById("ejercicios-" + alumnoId);
@@ -1709,10 +1856,13 @@
         html += `</div></div>`;
       });
 
+      html += `<div class="rutina-planificada" id="planificada-${alumnoId}-${dia}"></div>`;
+
       html += `</div>`;
     });
 
     panel.innerHTML = html || `<div class="sin-historial">Esta rutina no tiene ejercicios cargados.</div>`;
+    ordenDias.forEach(dia => renderizarRutinaPlanificada(alumnoId, dia));
   }
 
   async function guardarFilaEjercicio(ejercicioId, alumnoId, bloque){
