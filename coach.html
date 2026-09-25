@@ -306,6 +306,31 @@
   .ejercicio-item-agregar:active{ background:rgba(201,226,101,.35); }
   .agregar-plus{ color:var(--accent); font-weight:700; font-size:15px; flex:0 0 auto; margin-left:8px; }
 
+  .config-agregar{
+    margin-top:8px; border:1px solid var(--accent-vivid); border-radius:10px;
+    padding:10px; background:var(--bg-input);
+  }
+  .config-agregar-titulo{ font-weight:700; font-size:13.5px; margin-bottom:8px; }
+  .config-agregar-grid{
+    display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin-bottom:10px;
+  }
+  .config-agregar-grid label{
+    display:flex; flex-direction:column; gap:3px; font-size:11px; color:var(--text-dim);
+  }
+  .config-agregar-grid input{
+    padding:7px 8px; border-radius:6px; border:1px solid var(--line);
+    background:var(--bg); color:var(--text); font-size:13px;
+  }
+  .config-agregar-botones{ display:flex; gap:8px; }
+  .btn-confirmar-config{
+    flex:1; background:var(--accent-vivid); border:none; color:var(--text);
+    border-radius:8px; padding:9px 0; font-size:13px; font-weight:700; cursor:pointer;
+  }
+  .btn-cancelar-config{
+    background:none; border:1px solid var(--line); color:var(--text-dim);
+    border-radius:8px; padding:9px 14px; font-size:13px; cursor:pointer;
+  }
+
   .fila-peso{
     display:flex; align-items:center; gap:8px;
     background:var(--bg-input); border:1px solid var(--line); border-radius:9px;
@@ -1273,10 +1298,10 @@
   // --- Nuevo flujo para agregar ejercicios: Grupo muscular -> Ejercicio ---
   let contextoAgregarPorContenedor = {};
 
-  function armarBloqueAgregar(catalogo, bloque, lugar, rutinaId, dia, nombreDia, alumnoId){
+  function armarBloqueAgregar(catalogo, bloque, lugar, rutinaId, dia, nombreDia, alumnoId, pesoBasePorEjercicio){
     const contId = `agregar-${dia}-${bloque.replace(/\s+/g,"_")}-${alumnoId}`;
     const filtrados = catalogoFiltradoPorBloque(catalogo, bloque, lugar);
-    contextoAgregarPorContenedor[contId] = { filtrados, rutinaId, dia, nombreDia, bloque, alumnoId };
+    contextoAgregarPorContenedor[contId] = { filtrados, rutinaId, dia, nombreDia, bloque, alumnoId, pesoBasePorEjercicio: pesoBasePorEjercicio || {} };
 
     const grupos = [...new Set(filtrados.map(e => e.grupo_muscular || "Otros"))].sort((a,b)=>a.localeCompare(b,"es"));
 
@@ -1288,6 +1313,7 @@
       <div class="agregar-ejercicio-nuevo">
         <div class="grupos-agregar-grid" id="grupos-${contId}">${gruposHtml}</div>
         <div class="lista-ejercicios-agregar" id="lista-${contId}" style="display:none;"></div>
+        <div class="config-agregar" id="config-${contId}" style="display:none;"></div>
       </div>
     `;
   }
@@ -1309,11 +1335,63 @@
     }
 
     lista.innerHTML = filtrados.map(e => `
-      <div class="ejercicio-item-agregar" onclick="agregarFilaEjercicio('${ctx.rutinaId}', ${ctx.dia}, '${escJs(ctx.nombreDia)}', '${escJs(ctx.bloque)}', '${escJs(e.nombre_ejercicio)}', '${ctx.alumnoId}')">
+      <div class="ejercicio-item-agregar" onclick="mostrarConfigAgregar('${contId}','${escJs(e.nombre_ejercicio)}')">
         <span>${e.nombre_ejercicio}</span>
         <span class="agregar-plus">＋</span>
       </div>
     `).join("");
+  }
+
+  function mostrarConfigAgregar(contId, nombreEjercicio){
+    const ctx = contextoAgregarPorContenedor[contId];
+    const esFuerza = ctx.bloque === "Fuerza - Hipertrofia";
+    const defSeries = esFuerza ? 4 : (ctx.bloque === "Entrada en Calor" ? 1 : 2);
+    const defRepsMin = 10;
+    const defRepsMax = esFuerza ? 10 : 12;
+    const pesoBase = (ctx.pesoBasePorEjercicio || {})[nombreEjercicio];
+    const defPeso = (pesoBase != null) ? pesoBase : "";
+
+    document.getElementById("lista-" + contId).style.display = "none";
+    const cfg = document.getElementById("config-" + contId);
+    cfg.style.display = "block";
+    cfg.innerHTML = `
+      <div class="config-agregar-titulo">${nombreEjercicio}</div>
+      <div class="config-agregar-grid">
+        <label>Series<input type="number" id="cfg-series-${contId}" value="${defSeries}"></label>
+        <label>Reps min<input type="number" id="cfg-repsmin-${contId}" value="${defRepsMin}"></label>
+        <label>Reps max<input type="number" id="cfg-repsmax-${contId}" value="${defRepsMax}"></label>
+        <label>Peso (kg)<input type="number" step="0.5" id="cfg-peso-${contId}" value="${defPeso}" placeholder="opcional"></label>
+      </div>
+      <div class="config-agregar-botones">
+        <button type="button" class="btn-confirmar-config" onclick="confirmarAgregarEjercicio('${contId}','${escJs(nombreEjercicio)}')">Agregar a la rutina</button>
+        <button type="button" class="btn-cancelar-config" onclick="cancelarConfigAgregar('${contId}')">Cancelar</button>
+      </div>
+    `;
+  }
+
+  function cancelarConfigAgregar(contId){
+    document.getElementById("config-" + contId).style.display = "none";
+    document.getElementById("lista-" + contId).style.display = "block";
+  }
+
+  async function confirmarAgregarEjercicio(contId, nombreEjercicio){
+    const ctx = contextoAgregarPorContenedor[contId];
+    const boton = document.querySelector(`#config-${contId} .btn-confirmar-config`);
+    if(boton){ boton.disabled = true; boton.textContent = "Agregando..."; }
+
+    const numOrNull = (id) => {
+      const v = document.getElementById(id).value.trim();
+      return v === "" ? null : parseFloat(v.replace(",", "."));
+    };
+
+    const datos = {
+      series: numOrNull(`cfg-series-${contId}`),
+      repsMin: numOrNull(`cfg-repsmin-${contId}`),
+      repsMax: numOrNull(`cfg-repsmax-${contId}`),
+      peso: numOrNull(`cfg-peso-${contId}`)
+    };
+
+    await agregarFilaEjercicio(ctx.rutinaId, ctx.dia, ctx.nombreDia, ctx.bloque, nombreEjercicio, ctx.alumnoId, datos);
   }
 
   async function togglePanelEjercicios(alumnoId){
@@ -1449,7 +1527,7 @@
           `;
         });
 
-        html += armarBloqueAgregar(catalogo, bloque, lugarAlumno, rutina.id, dia, (nombresDias[dia]||"Dia "+dia), alumnoId);
+        html += armarBloqueAgregar(catalogo, bloque, lugarAlumno, rutina.id, dia, (nombresDias[dia]||"Dia "+dia), alumnoId, pesoBasePorEjercicio);
       });
 
       html += `</div>`;
@@ -1541,7 +1619,7 @@
     await cargarEjerciciosRutina(alumnoId, dia);
   }
 
-  async function agregarFilaEjercicio(rutinaId, dia, nombreDia, bloque, nombreEjercicio, alumnoId){
+  async function agregarFilaEjercicio(rutinaId, dia, nombreDia, bloque, nombreEjercicio, alumnoId, datos){
     const rutina = rutinaPorAlumnoGlobal[alumnoId];
     const rir = rutina ? rutina.rir_objetivo : 4;
 
@@ -1559,6 +1637,11 @@
 
     const nuevoOrden = (maxOrdenData && maxOrdenData[0] ? maxOrdenData[0].orden : 0) + 1;
 
+    const series = (datos && datos.series != null) ? datos.series : (bloque === "Fuerza - Hipertrofia" ? 4 : (bloque === "Entrada en Calor" ? 1 : 2));
+    const repsMin = (datos && datos.repsMin != null) ? datos.repsMin : 10;
+    const repsMax = (datos && datos.repsMax != null) ? datos.repsMax : (bloque === "Fuerza - Hipertrofia" ? 10 : 12);
+    const pesoKg = (datos && datos.peso != null) ? datos.peso : null;
+
     const { error } = await sb.from("rutina_ejercicios").insert({
       rutina_id: rutinaId,
       dia: dia,
@@ -1566,11 +1649,12 @@
       bloque: bloque,
       orden: nuevoOrden,
       nombre_ejercicio: nombreEjercicio,
-      series: bloque === "Fuerza - Hipertrofia" ? 4 : (bloque === "Entrada en Calor" ? 1 : 2),
-      reps_min: 10,
-      reps_max: 12,
+      series: series,
+      reps_min: repsMin,
+      reps_max: repsMax,
       rir: bloque === "Fuerza - Hipertrofia" ? rir : null,
       descanso_seg: bloque === "Fuerza - Hipertrofia" ? 90 : 30,
+      peso_kg: pesoKg,
       usa_cronometro: usaCrono,
       duracion_trabajo_seg: usaCrono ? 30 : null
     });
