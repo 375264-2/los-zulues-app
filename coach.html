@@ -1498,7 +1498,7 @@
 
   async function obtenerCatalogo(){
     if(catalogoEjerciciosCache) return catalogoEjerciciosCache;
-    const { data } = await sb.from("catalogo_ejercicios").select("nombre_ejercicio, bloque, zona_corporal, grupo_muscular, usa_cronometro_default, ubicacion").order("nombre_ejercicio");
+    const { data } = await sb.from("catalogo_ejercicios").select("nombre_ejercicio, bloque, zona_corporal, grupo_muscular, categoria_simple, usa_cronometro_default, ubicacion").order("nombre_ejercicio");
     catalogoEjerciciosCache = data || [];
     return catalogoEjerciciosCache;
   }
@@ -1562,7 +1562,9 @@
     const filtrados = catalogoFiltradoPorBloque(catalogo, bloque, lugar);
     contextoAgregarPorContenedor[contId] = { filtrados, rutinaId, dia, nombreDia, bloque, alumnoId, pesoBasePorEjercicio: pesoBasePorEjercicio || {} };
 
-    const grupos = [...new Set(filtrados.map(e => e.grupo_muscular || "Otros"))].sort((a,b)=>a.localeCompare(b,"es"));
+    const ORDEN_GRUPOS_SIMPLES = ["Pecho", "Espalda", "Hombros", "Brazos", "Piernas", "Core", "Cuerpo Completo"];
+    const grupos = [...new Set(filtrados.map(e => e.categoria_simple || "Cuerpo Completo"))]
+      .sort((a,b) => ORDEN_GRUPOS_SIMPLES.indexOf(a) - ORDEN_GRUPOS_SIMPLES.indexOf(b));
 
     const gruposHtml = grupos.map(g =>
       `<button type="button" class="btn-grupo-agregar" onclick="mostrarGrupoAgregar('${contId}','${escJs(g)}', this)">${g}</button>`
@@ -1586,7 +1588,7 @@
     const lista = document.getElementById("lista-" + contId);
     lista.style.display = "block";
 
-    const filtrados = ctx.filtrados.filter(e => (e.grupo_muscular || "Otros") === grupo);
+    const filtrados = ctx.filtrados.filter(e => (e.categoria_simple || "Cuerpo Completo") === grupo);
 
     if(filtrados.length === 0){
       lista.innerHTML = `<div class="sin-historial">No hay ejercicios en este grupo para el lugar de entrenamiento del alumno.</div>`;
