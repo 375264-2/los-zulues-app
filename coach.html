@@ -1530,12 +1530,26 @@
     return filtrados;
   }
 
-  function toggleBloqueAcordeon(id){
+  let bloquesAbiertosPorDia = {};
+
+  function estaBloqueAbierto(alumnoId, dia, bloque){
+    return !!(bloquesAbiertosPorDia[alumnoId] && bloquesAbiertosPorDia[alumnoId][dia] && bloquesAbiertosPorDia[alumnoId][dia].has(bloque));
+  }
+
+  function marcarBloqueAbierto(alumnoId, dia, bloque, abierto){
+    if(!bloquesAbiertosPorDia[alumnoId]) bloquesAbiertosPorDia[alumnoId] = {};
+    if(!bloquesAbiertosPorDia[alumnoId][dia]) bloquesAbiertosPorDia[alumnoId][dia] = new Set();
+    if(abierto) bloquesAbiertosPorDia[alumnoId][dia].add(bloque);
+    else bloquesAbiertosPorDia[alumnoId][dia].delete(bloque);
+  }
+
+  function toggleBloqueAcordeon(id, alumnoId, dia, bloque){
     const cuerpo = document.getElementById("cuerpo-" + id);
     const flecha = document.getElementById("flecha-" + id);
     const abrir = cuerpo.style.display !== "block";
     cuerpo.style.display = abrir ? "block" : "none";
     flecha.textContent = abrir ? "▴" : "▾";
+    marcarBloqueAbierto(alumnoId, dia, bloque, abrir);
   }
 
   function escJs(s){ return String(s).replace(/\\/g,"\\\\").replace(/'/g,"\\'"); }
@@ -1734,6 +1748,7 @@
     panel.style.display = abrir ? "block" : "none";
     if(abrir){
       seleccionadosPorDia[alumnoId] = {}; // arranca limpio, sin marcas de una sesión anterior
+      bloquesAbiertosPorDia[alumnoId] = {};
       await cargarEjerciciosRutina(alumnoId);
     }
   }
@@ -1815,13 +1830,14 @@
       ordenBloques.forEach(bloque => {
         const idAcc = `acc-${alumnoId}-${dia}-${bloque.replace(/\s+/g,"_")}`;
         const cantidadEnBloque = (bloques[bloque] || []).length;
+        const abierto = estaBloqueAbierto(alumnoId, dia, bloque);
         html += `
           <div class="bloque-acordeon">
-            <div class="bloque-acordeon-header" onclick="toggleBloqueAcordeon('${idAcc}')">
+            <div class="bloque-acordeon-header" onclick="toggleBloqueAcordeon('${idAcc}', '${alumnoId}', ${dia}, '${escJs(bloque)}')">
               <span>${bloque}${cantidadEnBloque ? ` (${cantidadEnBloque})` : ""}</span>
-              <span class="flecha-resumen" id="flecha-${idAcc}">▾</span>
+              <span class="flecha-resumen" id="flecha-${idAcc}">${abierto ? "▴" : "▾"}</span>
             </div>
-            <div class="bloque-acordeon-body" id="cuerpo-${idAcc}" style="display:none;">
+            <div class="bloque-acordeon-body" id="cuerpo-${idAcc}" style="display:${abierto ? "block" : "none"};">
         `;
         (bloques[bloque] || []).forEach(ej => {
           const resumen = ej.usa_cronometro
