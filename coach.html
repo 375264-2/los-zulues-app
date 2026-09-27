@@ -265,6 +265,17 @@
   .flecha-resumen{ color:var(--text-dim); font-size:13px; flex:0 0 auto; margin-left:8px; }
   .detalle-ejercicio{ padding:0 10px 10px; }
   .fila-ejercicio-editor select{ margin-bottom:6px; }
+  .campo-nombre-actual{ margin-bottom:10px; }
+  .campo-nombre-actual label{ font-size:10.5px; margin:0 0 3px; }
+  .nombre-actual-display{
+    background:var(--bg-input); border:1px solid var(--line); border-radius:8px;
+    padding:9px 10px; font-size:13.5px; font-weight:600; margin-bottom:6px;
+  }
+  .btn-cambiar-ejercicio{
+    width:100%; background:none; border:1px solid var(--accent); color:var(--accent);
+    border-radius:8px; padding:8px 0; font-size:12.5px; cursor:pointer;
+  }
+  .cambiar-ejercicio-panel{ margin-top:8px; }
   .grid-campos-ej{
     display:grid; grid-template-columns:repeat(2,1fr); gap:6px; margin:6px 0;
   }
@@ -1723,6 +1734,51 @@
     `;
   }
 
+  // --- Cambiar el ejercicio de una fila ya existente (mismo patrón que agregar) ---
+  let contextoCambiarEjercicio = {};
+
+  async function mostrarCambiarEjercicio(ejercicioId, bloque, lugar){
+    const cont = document.getElementById("cambiar-ej-" + ejercicioId);
+    const abrir = cont.style.display !== "block";
+    cont.style.display = abrir ? "block" : "none";
+    if(!abrir) return;
+
+    const catalogo = await obtenerCatalogo();
+    const filtrados = catalogoFiltradoPorBloque(catalogo, bloque, lugar);
+    contextoCambiarEjercicio[ejercicioId] = { filtrados };
+
+    const ORDEN_GRUPOS_SIMPLES = ["Pecho", "Espalda", "Hombros", "Brazos", "Piernas", "Core", "Cuerpo Completo"];
+    const grupos = [...new Set(filtrados.map(e => e.categoria_simple || "Cuerpo Completo"))]
+      .sort((a,b) => ORDEN_GRUPOS_SIMPLES.indexOf(a) - ORDEN_GRUPOS_SIMPLES.indexOf(b));
+
+    cont.innerHTML = `
+      <div class="grid-botones-cmp" id="grupos-cambiar-${ejercicioId}">
+        ${grupos.map(g => `<button type="button" onclick="mostrarListaCambiar('${ejercicioId}','${escJs(g)}', this)">${g}</button>`).join("")}
+      </div>
+      <div class="lista-cmp" id="lista-cambiar-${ejercicioId}" style="display:none;"></div>
+    `;
+  }
+
+  function mostrarListaCambiar(ejercicioId, grupo, btnElemento){
+    document.getElementById("grupos-cambiar-" + ejercicioId).querySelectorAll("button").forEach(b => b.classList.remove("activo"));
+    btnElemento.classList.add("activo");
+
+    const ctx = contextoCambiarEjercicio[ejercicioId];
+    const lista = document.getElementById("lista-cambiar-" + ejercicioId);
+    lista.style.display = "block";
+    const filtrados = ctx.filtrados.filter(e => (e.categoria_simple || "Cuerpo Completo") === grupo);
+    lista.innerHTML = filtrados.map(e => `
+      <div class="item-cmp" onclick="elegirNuevoEjercicio('${ejercicioId}','${escJs(e.nombre_ejercicio)}')">
+        <span>${e.nombre_ejercicio}</span>
+      </div>
+    `).join("");
+  }
+
+  function elegirNuevoEjercicio(ejercicioId, nombreEjercicio){
+    document.getElementById("nombre-actual-" + ejercicioId).textContent = nombreEjercicio;
+    document.getElementById("cambiar-ej-" + ejercicioId).style.display = "none";
+  }
+
   function mostrarGrupoAgregar(contId, grupo, btnElemento){
     document.getElementById("grupos-" + contId).querySelectorAll(".btn-grupo-agregar")
       .forEach(b => b.classList.remove("activo"));
@@ -1999,9 +2055,12 @@
                 <span class="flecha-resumen" id="flecha-ej-${ej.id}">▾</span>
               </div>
               <div class="detalle-ejercicio" id="detalle-ej-${ej.id}" style="display:none;">
-                <select id="campo-nombre-${ej.id}">
-                  ${opcionesCatalogoPorBloque(catalogo, bloque, ej.nombre_ejercicio, lugarAlumno)}
-                </select>
+                <div class="campo-nombre-actual">
+                  <label>Ejercicio</label>
+                  <div class="nombre-actual-display" id="nombre-actual-${ej.id}">${ej.nombre_ejercicio}</div>
+                  <button type="button" class="btn-cambiar-ejercicio" onclick="mostrarCambiarEjercicio('${ej.id}', '${escJs(bloque)}', '${lugarAlumno}')">Cambiar ejercicio</button>
+                  <div class="cambiar-ejercicio-panel" id="cambiar-ej-${ej.id}" style="display:none;"></div>
+                </div>
                 <div class="grid-campos-ej">
                   <div><label>Series</label><input type="text" id="campo-series-${ej.id}" value="${ej.series ?? ""}"></div>
                   <div><label>Reps min</label><input type="text" id="campo-repsmin-${ej.id}" value="${ej.reps_min ?? ""}"></div>
@@ -2062,7 +2121,7 @@
     boton.disabled = true;
     boton.textContent = "Guardando...";
 
-    const nombreEjercicio = document.getElementById("campo-nombre-" + ejercicioId).value;
+    const nombreEjercicio = document.getElementById("nombre-actual-" + ejercicioId).textContent.trim();
     const NOTA_AUTOMATICA = "Sin peso base cargado - definir con el coach";
 
     let pesoFinal = val("campo-peso-" + ejercicioId);
