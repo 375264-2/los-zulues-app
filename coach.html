@@ -307,6 +307,8 @@
   }
   .btn-guardar-fila{ background:var(--accent-vivid); border:none; color:var(--text); font-weight:700; }
   .btn-borrar-fila{ background:none; border:1px solid var(--danger); color:var(--danger); }
+  .btn-mover{ background:none; border:1px solid var(--line); color:var(--text-dim); }
+  .btn-mover:disabled{ opacity:.35; cursor:default; }
 
   .agregar-ejercicio{
     display:flex; gap:6px; margin-top:6px; margin-bottom:4px;
@@ -2041,7 +2043,7 @@
             </div>
             <div class="bloque-acordeon-body" id="cuerpo-${idAcc}" style="display:${abierto ? "block" : "none"};">
         `;
-        (bloques[bloque] || []).forEach(ej => {
+        (bloques[bloque] || []).forEach((ej, idxEj, arrEj) => {
           const resumen = ej.usa_cronometro
             ? `Cronómetro · ${ej.series ?? "-"} rondas`
             : `${ej.series ?? "-"}x${ej.reps_min ?? "-"}-${ej.reps_max ?? "-"} · RIR ${ej.rir ?? "-"}`;
@@ -2087,6 +2089,10 @@
                     <input type="text" id="campo-duraciontrabajo-${ej.id}" value="${ej.duracion_trabajo_seg ?? ""}" style="width:80px;">
                     <div class="sin-historial" style="margin-top:4px;">Usa "Series" como cantidad de rondas y "Descanso" como segundos de pausa entre rondas.</div>
                   </div>
+                </div>
+                <div class="acciones-fila-ej">
+                  <button class="btn-mover" onclick="moverEjercicio('${ej.id}', '${idxEj > 0 ? arrEj[idxEj-1].id : ""}', '${alumnoId}', ${dia})" ${idxEj === 0 ? "disabled" : ""}>▲ Subir</button>
+                  <button class="btn-mover" onclick="moverEjercicio('${ej.id}', '${idxEj < arrEj.length-1 ? arrEj[idxEj+1].id : ""}', '${alumnoId}', ${dia})" ${idxEj === arrEj.length-1 ? "disabled" : ""}>▼ Bajar</button>
                 </div>
                 <div class="acciones-fila-ej">
                   <button class="btn-guardar-fila" onclick="guardarFilaEjercicio('${ej.id}', '${alumnoId}', '${bloque}')">Guardar</button>
@@ -2181,6 +2187,28 @@
       fila.querySelector(".nombre-resumen").textContent = nombreEjercicio;
       fila.querySelector(".datos-resumen").textContent = resumenTexto;
     }
+  }
+
+  async function moverEjercicio(ejercicioId, otroId, alumnoId, dia){
+    if(!otroId) return;
+
+    const { data, error } = await sb
+      .from("rutina_ejercicios")
+      .select("id, orden")
+      .in("id", [ejercicioId, otroId]);
+
+    if(error || !data || data.length !== 2){
+      alert("No se pudo mover el ejercicio.");
+      return;
+    }
+
+    const actual = data.find(d => d.id === ejercicioId);
+    const otro = data.find(d => d.id === otroId);
+
+    await sb.from("rutina_ejercicios").update({ orden: otro.orden }).eq("id", ejercicioId);
+    await sb.from("rutina_ejercicios").update({ orden: actual.orden }).eq("id", otroId);
+
+    await cargarEjerciciosRutina(alumnoId, dia);
   }
 
   async function borrarFilaEjercicio(ejercicioId, alumnoId, dia){
