@@ -1369,6 +1369,24 @@
     `).join("");
   }
 
+  function precargarUltimaMedicion(alumnoId, ultima){
+    const set = (id, valor) => {
+      const el = document.getElementById(id);
+      if(el && (valor !== null && valor !== undefined)) el.value = valor;
+    };
+    set("med-cuello-" + alumnoId, ultima.cuello);
+    set("med-torso-" + alumnoId, ultima.torso);
+    set("med-brazo-izq-" + alumnoId, ultima.brazo_izq);
+    set("med-brazo-der-" + alumnoId, ultima.brazo_der);
+    set("med-cintura-" + alumnoId, ultima.cintura);
+    set("med-cadera-" + alumnoId, ultima.cadera);
+    set("med-cuad-izq-" + alumnoId, ultima.cuadriceps_izq);
+    set("med-cuad-der-" + alumnoId, ultima.cuadriceps_der);
+    set("med-pantorrillas-" + alumnoId, ultima.pantorrillas);
+    set("med-masa-" + alumnoId, ultima.porcentaje_masa_muscular);
+    set("med-grasa-" + alumnoId, ultima.porcentaje_grasa_corporal);
+  }
+
   function calcularGrasaNavy(alumnoId, sexo, altura){
     const val = (id) => {
       const el = document.getElementById(id);
@@ -1474,6 +1492,7 @@
 
     datosMediciones[alumnoId] = data;
     dibujarGrafico(alumnoId);
+    precargarUltimaMedicion(alumnoId, data[0]);
 
     let filas = data.map(m => `
       <tr>
