@@ -1170,7 +1170,7 @@
                 <label>% Grasa corporal</label>
                 <div style="display:flex; gap:6px;">
                   <input type="text" id="med-grasa-${a.id}" style="flex:1;">
-                  <button type="button" style="white-space:nowrap; background:none; border:1px solid var(--accent); color:var(--accent); border-radius:8px; padding:0 12px; font-size:12px; cursor:pointer;" onclick="calcularGrasaNavy('${a.id}', '${a.sexo || ""}', ${a.altura || "null"})">Calcular (Navy)</button>
+                  <button type="button" style="white-space:nowrap; background:none; border:1px solid var(--accent); color:var(--accent); border-radius:8px; padding:0 12px; font-size:12px; cursor:pointer;" onclick="calcularGrasaNavy('${a.id}')">Calcular (Navy)</button>
                 </div>
               </div>
             </div>
@@ -1287,6 +1287,14 @@
     }
 
     cont.innerHTML = `Meta diaria: <strong>${data[0].calorias_objetivo} kcal</strong> · <strong>${data[0].proteina_objetivo_g} g de proteína</strong>`;
+
+    if(alumnosPorIdGlobal[alumnoId]){
+      alumnosPorIdGlobal[alumnoId].altura = altura;
+      alumnosPorIdGlobal[alumnoId].peso = peso;
+      alumnosPorIdGlobal[alumnoId].edad = edad;
+      alumnosPorIdGlobal[alumnoId].objetivo = objetivo;
+      alumnosPorIdGlobal[alumnoId].nivel_actividad = actividad;
+    }
   }
 
   const graficos = {};
@@ -1396,7 +1404,11 @@
     set("med-grasa-" + alumnoId, ultima.porcentaje_grasa_corporal);
   }
 
-  function calcularGrasaNavy(alumnoId, sexo, altura){
+  function calcularGrasaNavy(alumnoId){
+    const info = alumnosPorIdGlobal[alumnoId] || {};
+    const sexo = info.sexo || "";
+    const altura = info.altura;
+
     const val = (id) => {
       const el = document.getElementById(id);
       const v = el.value.trim().replace(",", ".");
