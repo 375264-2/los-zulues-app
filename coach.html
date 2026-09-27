@@ -1157,7 +1157,13 @@
               <div><label>Cuádriceps der. (cm)</label><input type="text" id="med-cuad-der-${a.id}"></div>
               <div><label>Pantorrillas (cm)</label><input type="text" id="med-pantorrillas-${a.id}"></div>
               <div><label>% Masa muscular</label><input type="text" id="med-masa-${a.id}"></div>
-              <div style="grid-column:span 2;"><label>% Grasa corporal</label><input type="text" id="med-grasa-${a.id}"></div>
+              <div style="grid-column:span 2;">
+                <label>% Grasa corporal</label>
+                <div style="display:flex; gap:6px;">
+                  <input type="text" id="med-grasa-${a.id}" style="flex:1;">
+                  <button type="button" style="white-space:nowrap; background:none; border:1px solid var(--accent); color:var(--accent); border-radius:8px; padding:0 12px; font-size:12px; cursor:pointer;" onclick="calcularGrasaNavy('${a.id}', '${a.sexo || ""}', ${a.altura || "null"})">Calcular (Navy)</button>
+                </div>
+              </div>
             </div>
             <label>Notas (opcional)</label>
             <input type="text" id="med-notas-${a.id}">
@@ -1361,6 +1367,48 @@
         </div>
       </div>
     `).join("");
+  }
+
+  function calcularGrasaNavy(alumnoId, sexo, altura){
+    const val = (id) => {
+      const el = document.getElementById(id);
+      const v = el.value.trim().replace(",", ".");
+      return v === "" ? null : parseFloat(v);
+    };
+
+    const cuello = val("med-cuello-" + alumnoId);
+    const cintura = val("med-cintura-" + alumnoId);
+    const cadera = val("med-cadera-" + alumnoId);
+    const esMujer = (sexo || "").toLowerCase().startsWith("f");
+
+    if(!altura){
+      alert("Este alumno no tiene la altura cargada. Completala en 'Datos nutricionales' y volvé a intentar.");
+      return;
+    }
+    if(!cuello || !cintura || (esMujer && !cadera)){
+      alert(esMujer
+        ? "Para calcular en mujeres hace falta cargar Cuello, Cintura y Cadera."
+        : "Para calcular en hombres hace falta cargar Cuello y Cintura.");
+      return;
+    }
+
+    let porcentaje;
+    if(esMujer){
+      const suma = cintura + cadera - cuello;
+      if(suma <= 0){ alert("Las medidas cargadas no son válidas para calcular (cintura + cadera - cuello debe ser positivo)."); return; }
+      porcentaje = 495 / (1.29579 - 0.35004 * Math.log10(suma) + 0.22100 * Math.log10(altura)) - 450;
+    } else {
+      const resta = cintura - cuello;
+      if(resta <= 0){ alert("Las medidas cargadas no son válidas para calcular (cintura - cuello debe ser positivo)."); return; }
+      porcentaje = 495 / (1.0324 - 0.19077 * Math.log10(resta) + 0.15456 * Math.log10(altura)) - 450;
+    }
+
+    if(!isFinite(porcentaje) || porcentaje <= 0 || porcentaje > 70){
+      alert("El resultado no dio un valor razonable — revisá que las medidas y la altura estén bien cargadas.");
+      return;
+    }
+
+    document.getElementById("med-grasa-" + alumnoId).value = porcentaje.toFixed(1);
   }
 
   async function guardarMedicion(alumnoId){
